@@ -1,0 +1,6 @@
+Version 0.1
+-----------
+- Initial version
+- First revision of API for installing, updating, uninstalling
+- Simple package metadata
+- Basic RPM fallback backend

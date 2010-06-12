@@ -1,0 +1,116 @@
+.\" Copyright (c) 2010, Denis Washington <dwashington@gmx.net>
+.\"
+.\" This is free documentation; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public License as
+.\" published by the Free Software Foundation; either version 3 of
+.\" the License, or (at your option) any later version.
+.\"
+.\" The GNU General Public License's references to "object code"
+.\" and "executables" are to be interpreted as the output of any
+.\" document formatting or typesetting system, including
+.\" intermediate and printed output.
+.\"
+.\" This manual is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public
+.\" License along with this manual; if not, see
+.\" <http://www.gnu.org/licenses/>.
+.TH PSYS_TLIST 3 2010-06-08 libpsys "Psys Library Manual"
+.SH NAME
+psys_tlist_locale, psys_tlist_value, psys_tlist_next - Traverse
+.BR psys (7)
+translation lists
+.SH SYNOPSIS
+.B #include <psys.h>
+.sp
+.BI "const char *psys_tlist_locale(psys_tlist_t " elem );
+.br
+.BI "const char *psys_tlist_value(psys_tlist_t " elem );
+.br
+.BI "psys_tlist_t psys_tlist_next(psys_tlist_t " elem );
+.SH DESCRIPTION
+For a conceptual overview of translation lists, see
+.BR psys (7).
+.PP
+.BR psys_tlist_locale ()
+returns the
+.BR locale (7)
+for which the translation list element
+.I elem
+provides a value.
+The locale is not guaranteed to exist on the system.
+.PP
+.BR psys_tlist_value ()
+returns the value associated with the locale by
+.IR elem .
+.PP
+.BR psys_tlist_next ()
+returns the element immediately following
+.I elem
+in the translation list it belongs to.
+If
+.I elem
+is the last element of the list,
+.BR psys_tlist_next ()
+returns NULL.
+.PP
+In all cases,
+.I elem
+must not be NULL.
+Otherwise, the calling program will be aborted.
+.SH RETURN VALUE
+See
+.BR DESCRIPTION .
+.SH EXAMPLE
+The following program creates a package object, adds values for different
+locales to the object's Summary field, and outputs each translation
+to standard output.
+.nf
+
+static void print_summary(psys_pkg_t pkg)
+{
+    psys_tlist_t summary, l;
+
+    summary = psys_pkg_summary(pkg);
+
+    for (l = summary; l; l = psys_tlist_next(l)) {
+        printf("Summary (%s): %s\\n",
+               psys_tlist_locale(l),
+               psys_tlist_value(l));
+    }
+}
+
+int main(int argc, const char **argv)
+{
+    psys_pkg_t pkg;
+
+    pkg = psys_pkg_new(
+        "example.com", "helloworld", "0.1", "4.0", "noarch");
+    if (!pkg)
+        return EXIT_FAILURE;
+
+    psys_pkg_add_summary (
+        pkg, "C", "A program printing `Hello World!'");
+    psys_pkg_add_summary (
+        pkg, "de", "Ein Programm, das \\"Hello World\\" ausgibt");
+
+    print_summary(pkg);
+    return 0;
+}
+.fi
+.PP
+When run, the order in which the program outputs the translations will
+be directly opposite to the order they were added.
+This, however, is just a side effect of the current implementation; how a
+translation list is ordered is undefined.
+(Currently, translation lists are implemented as singly-linked lists,
+which makes prepending the most efficient method to add new elements.)
+.SH SEE ALSO
+.BR psys (7)
+.SH COLOPHON
+This page is part of the documentation created by the Psys Libray Project.
+See the project page at http://page/ for more information about the
+project and for reporting bugs.

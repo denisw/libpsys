@@ -1,0 +1,200 @@
+.\" Copyright (c) 2010, Denis Washington <dwashington@gmx.net>
+.\"
+.\" This is free documentation; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public License as
+.\" published by the Free Software Foundation; either version 3 of
+.\" the License, or (at your option) any later version.
+.\"
+.\" The GNU General Public License's references to "object code"
+.\" and "executables" are to be interpreted as the output of any
+.\" document formatting or typesetting system, including
+.\" intermediate and printed output.
+.\"
+.\" This manual is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public
+.\" License along with this manual; if not, see
+.\" <http://www.gnu.org/licenses/>.
+.TH PSYS 7 2010-06-08 libpsys "Psys Library Manual"
+.SH NAME
+psys - Overview of the psys library
+.SH SYNOPSIS
+.B #include <psys.h>
+.sp
+.BI "typedef struct _psys_pkg *" psys_pkg_t ;
+.br
+.BI "typedef struct _psys_err *" psys_err_t ;
+.br
+.BI "typedef struct _psys_tlist *" psys_tlist_t ;
+.SH DESCRIPTION
+The
+.B psys
+library provides a simple interface to the system package manager of a
+Linux system.
+It allows installation programs to notify the package manager of the
+installation, uninstallation and update of third-party add-on software
+packages, and to request these packages to be added to or removed from
+the system package database.
+The
+.B psys
+library interface is generic and not tied to a specific package management
+system or Linux distribution.
+.PP
+Note that the
+.B psys
+library is only useful for adding and removing software which complies to
+the Linux Standard Base (LSB) specifications [1].
+Most notably, it is assumed that the data files of a software package are
+installed into
+.I /opt
+as demanded by the Filesystem Hierarchy Standard (FHS) [2], and that a
+package only depends on the interfaces and behavior specified by the LSB;
+any additional dependencies must be contained within the package itself.
+.SS General Usage
+Using the
+.B psys
+library, the installation or update of a software package is divided into
+three steps.
+.PP
+First, the package is "announced" to the package manager by calling the
+.BR psys_announce (3)
+or
+.BR psys_announce_update (3)
+function. Doing so gives the package manager the opportunity to explore
+possible conflicts, incompatibilities etc. between the package and the
+current system.
+If any such problem is detected, an error is reported to the caller of the
+announement function (see the
+.B Handling Errors
+section of this manual page); the caller should then abort the
+installation attempt.
+.PP
+If
+.BR psys_announce (3)
+or
+.BR psys_announce_update (3)
+returned without errors, the caller may then actually perform the
+installation of the announced package, using its preferred tools
+and methods.
+It is important, however, that the package is being installed into its
+assigned directory (see
+.BR psysmeta (7)
+for more details).
+.PP
+After the installation is complete, the installing program "registers" the
+package by calling
+.BR psys_register (3)
+or
+.BR psys_register_update (3).
+This prompts the package manager to add the package to the system's
+package database (replacing the old entry for the package in case of an
+update).
+.PP
+Uninstalling a package is very similar, with the exception that the
+package is "unannounced" instead of announced (using
+.BR psys_unannounce (3)),
+and "unregistered" instead of registered (by calling
+.BR psys_unregister (3)).
+.PP
+See respective functions' manual pages for more details about their usage,
+including simple example programs.
+.SS Package Objects
+In order to announce or register a package with
+.BR psys_announce (3)
+and
+.BR psys_register (3)
+or
+.BR psys_announce_update (3)
+and
+.BR psys_register_update (3),
+a set of metadata describing the package must be specified.
+This is archieved by passing these functions a package object.
+.PP
+A package object is an opaque structure (referenced by a pointer of type
+.BR psys_pkg_t )
+consisting of a set of metadata fields, each of which holds a part of a
+specific package's metadata.
+Package objects can be created by calling the
+.BR psys_pkg_new (3)
+function, and freed with
+.BR psys_pkg_free (3).
+.PP
+For more information about the metadata fields of a package object and
+how their values can be set or received, see
+.BR psysmeta(7).
+.SS Handling Errors
+If a
+.B psys
+announcement or (un)registration function detects a package/system
+conflict, or if it fails to complete (e.g. due to an I/O error), it
+signals this to the caller by returning the value -1.
+Additionally, these functions accepts an out parameter
+.I err
+which can be used to receive an error object in such a case.
+.PP
+An error object (referenced by an opaque pointer of type
+.BR psys_err_t )
+consists of an error code which specifies the kind of error which
+occurred, and a descriptive error message which can be displayed to the
+user.
+This information can be received by passing the error object to
+.BR psys_err_code (3)
+and
+.BR psys_err_message (3),
+respectively.
+.PP
+The kinds of errors to be expected by a particular function, and the
+associated error codes, can be looked up in the function's manual page.
+.SS Translation Lists
+The
+.B psys
+library allows some package metadata to be translated.
+For instance, the value of the Description metadata field (see
+.BR psysmeta (7))
+can be set for each
+.BR locale (7)
+independently.
+.PP
+When such metadata is requested from a package object, it is returned in
+the form of a translation list.
+Each element of a translation list maps a locale
+to a string which specifies the value's translation for that locale.
+Both a translation list and its elements are referenced by opaque pointers
+of type
+.BR psys_tlist_t ;
+in fact, a translation list pointer is actually just a pointer to its
+first element.
+.PP
+To receive the locale for which a given list element defines a translation,
+that element can be passed to
+.BR psys_tlist_locale (3).
+The actual value for that locale can be received with
+.BR psys_tlist_value (3).
+By calling
+.BR psys_tlist_next (3),
+the next element of the translation list is received.
+.PP
+If a translation list contains an element for the "C" locale, that
+element's value defines the fallback value to be used if there is no
+matching translation for a given locale.
+.PP
+See the
+.BR psys_tlist (3)
+manual page for more details about the mentioned functions and a simple
+example for their usage.
+.SH SEE ALSO
+.BR psysmeta (7),
+.BR psys_register (3),
+.BR psys_register_update (3),
+.BR psys_unregister (3)
+.PP
+[1] http://www.linuxbase.org/
+.br
+[2] http://www.pathname.com/fhs/pub/fhs-2.3.html
+.SH COLOPHON
+This page is part of the documentation created by the Psys Libray Project.
+See the project page at http://page/ for more information about the
+project and for reporting bugs.

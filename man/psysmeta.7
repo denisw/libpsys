@@ -1,0 +1,261 @@
+.\" Copyright (c) 2010, Denis Washington <dwashington@gmx.net>
+.\"
+.\" This is free documentation; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public License as
+.\" published by the Free Software Foundation; either version 3 of
+.\" the License, or (at your option) any later version.
+.\"
+.\" The GNU General Public License's references to "object code"
+.\" and "executables" are to be interpreted as the output of any
+.\" document formatting or typesetting system, including
+.\" intermediate and printed output.
+.\"
+.\" This manual is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public
+.\" License along with this manual; if not, see
+.\" <http://www.gnu.org/licenses/>.
+.TH PSYSMETA 7 2010-06-08 libpsys "Psys Library Manual"
+.SH NAME
+psysmeta - Description of
+.BR psys (7)
+package metadata
+.SH DESCRIPTION
+This manual page describes the metadata fields of a
+.BR psys (7)
+package object, including references to the functions to set and
+receive the value of each field.
+.SS Vendor
+The Vendor field holds a string that uniquely identifies the vendor of
+the software contained in the represented package.
+The string may either be an LSB Provider Name assigned to the vendor by
+the LANANA [1] or a domain name owned by the vendor, such as
+.I example.com
+or
+.IR example.sourceforge.net ,
+written in lower case.
+If a domain name is used which contains hyphen characters (-), these must
+be omitted.
+.PP
+The value of the Vendor field is specified upon package object creation
+with
+.BR psys_pkg_new (3).
+It can be received by calling
+.BR psys_pkg_vendor (3).
+.SS Name
+The Name field holds the represented package's name, which must consist of
+only lower-case letters (a-z), digits (0-9) and hyphen characters (-).
+.PP
+The Vendor and Name field values together uniquely identify the package
+represented by the package object.
+It should always be assumed that only one package with the same vendor
+and name can be installed at the same time.
+(Some package managers might allow the installation of identically named
+packages built for different machine architectures, but such behavior
+should not be counted on.)
+.PP
+The value of the Name field is specified upon package object creation with
+.BR psys_pkg_new (3).
+It can be received by calling
+.BR psys_pkg_name (3).
+.SS (Data Directory)
+The Data Directory field is actually not a metadata field on its own
+right, but is synthesized from the Vendor and Name fields.
+Its value specifies the target directory of the represented package's
+installation.
+.PP
+The Data Directory field value is always
+.IR /opt/vendor/name ,
+where
+.I vendor
+and
+.I name
+are the values of the package object's Vendor and Name fields,
+respectively.
+.PP
+Note that the
+.BR psys (7)
+library relies on the assumption that the represented package's data
+files will be installed in this directory when checking for conflicts with
+the current file system; thus, it is strongly advised to make as few
+modifications outside of the Data Directory as possible during the
+package's installation or update.
+(Unfortunately, adding files to other directories is often needed in
+practice, for instance in the case of init scripts or .desktop files;
+however, such modifications should be kept to a minimum and, even more
+importantly, be VERY carefully checked for conflicts with
+already-installed files.)
+.PP
+The value of the Data Directory field can be received with
+.BR psys_pkg_dir (3).
+.SS Version
+The Version field holds a string specifying the version of the represented
+package.
+A version must be a sequence of digits (0-9) followed by zero or more
+sequences of a single dot character (.) with one or more following digits.
+The version may end with an arbitrary number of lower-case letters (a-z).
+For instance,
+.IR 1.2.3b , 
+.IR 5.1 ,
+.IR 3deluxe
+and
+.I 0
+are all valid versions.
+.PP
+When specifying a version, it is important to know the rules by which
+.BR psys (7)
+library compares versions.
+This is crucial for package updates; the
+.BR psys_announce_update (3)
+and
+.BR psys_register_update (3)
+functions will report an error if the value stored in the passed package
+object's Version field  is not considered newer than the version already
+installed.
+.PP
+The algorithm for comparing two versions A and B works as follows:
+.IP 1. 4
+Both A and B are split at every dot character, yielding a set of each one
+or more segments.
+The dot characters themselves are discarded.
+If the last segment consists of both digits and letters, it is split into
+two segments so that the first consists only of digits, and the second
+consists only of letters.
+As an example, the version
+.I 1.34.12foo
+is split into the segments
+.IR 1 ,
+.IR 34 ,
+.I 12
+and
+.IR foo .
+.IP 2. 4
+The segments of each A and B are compared in left-to-right order,
+beginning with the first segment of each version.
+If both segments consist of digits, their numerical values are compared
+(ignoring any leading zeros); if the values differ, the version with
+the higher-value segment is considered newer (which ends the comparison).
+If both segments consist of letters, they are compared lexically; if
+they differ, the version with lexically succeeding letter sequence is
+considered newer.
+If one segment consists of letters and one of digits, the version with
+the latter segment is considered newer.
+If no version is considered newer after the segment comparison, the next
+segment of each version is taken and compared as above. This procedure
+is repeated until either one or both versions have no segments left for
+comparison.
+In the former case, the version which still has segments left is
+considered newer; in the latter case, both versions are considered equal.
+.PP
+In practice, these rules mean that usual version numbers such as
+.I 1.2.3
+are compared as expected
+.RI ( "1.2 > 1.1"
+and
+.IR "0.9 < 1.0" ,
+for instance).
+The most important thing to remember about the version comparison scheme
+is that leading zeros are
+.I not
+significant.
+For instance, all these expressions are true: 
+.sp
+.in +4
+.I 1.3 = 01.03
+.br
+.I 0.003 > 0.2
+.br
+.I 1.2 < 1.05
+.PP
+The value of the Version field is specified upon package object creation
+with
+.BR psys_pkg_new (3).
+It can be received by calling
+.BR psys_pkg_version (3).
+.SS LSB Version
+The LSB Version field holds the minimum version of the Linux Standard Base
+(LSB) standard which specifies the interfaces and behavior required by the
+represented package.
+The version must be a string of the form
+.IR M.m ,
+where
+.I M
+and
+.I m
+are the major and minor revisions of the required LSB version.
+For instance, the LSB version string
+.I 4.0
+specifies that version 4.0 of the LSB is required.
+.PP
+The value of the LSB Version field is specified upon package object
+creation with
+.BR psys_pkg_new (3).
+It can be received by calling
+.BR psys_pkg_lsb_version (3).
+.SS Architecture
+The Architecture field holds a string specifying the machine architecture
+for which the represented package was built.
+The following values are valid:
+.TP 9
+.B amd64
+The package is built for AMD64-compatible machines.
+.TP 9
+.B ia32
+The package is built for 32-bit Intel Pentium-compatible (x86) machines.
+.TP 9
+.B ia64
+The package is built for 64-bit Intel Itanium machines.
+.TP 9
+.B noarch
+The package does not depend on a specific machine architecture.
+.TP 9
+.B ppc
+The package is built to 32-bit PowerPC machines.
+.TP 9
+.B ppc64
+The package is built to 64-bit PowerPC machines.
+.TP 9
+.B s390
+The package is built for IBM S/390 machines.
+.TP 9
+.B s390x
+The package is built for IBM S/390X machines.
+.PP
+The value of the Architecture field is specified upon package object
+creation with
+.BR psys_pkg_new (3).
+It can be received by calling
+.BR psys_pkg_arch (3).
+.SS Summary (optional)
+The Summary field holds a translation list (see
+.BR psys (7))
+providing a optionally localized one-line summary of the package.
+A package summary must not contain any newline character.
+.PP
+The Summary field may be augmented with locale-specific values by calling
+.BR psys_pkg_add_summary (3).
+A list of all Summary field values can be received by calling
+.BR psys_pkg_summary (3).
+.SS Description (optional)
+The Description field holds translation list (see section
+.BR psys (7))
+providing a optionally localized plain-text description the package.
+In contrast to a summary, a package description may span multiple
+lines.
+.PP
+The Description field may be augmented with locale-specific values by
+calling
+.BR psys_pkg_add_description (3).
+A list of all Description field values can be received by calling
+.BR psys_pkg_description (3).
+.SH SEE ALSO
+.BR psys (7)
+.sp
+[1] http://www.lanana.org/
+.SH COLOPHON
+This page is part of the documentation created by the Psys Libray Project.
+See the project page at http://page/ for more information about the
+project and for reporting bugs.

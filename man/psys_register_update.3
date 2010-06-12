@@ -1,0 +1,203 @@
+.\\" Copyright (c) 2010, Denis Washington <dwashington@gmx.net>
+.\\"
+.\\" This is free documentation; you can redistribute it and/or
+.\\" modify it under the terms of the GNU General Public License as
+.\\" published by the Free Software Foundation; either version 3 of
+.\\" the License, or (at your option) any later version.
+.\\"
+.\\" The GNU General Public License's references to "object code"
+.\\" and "executables" are to be interpreted as the output of any
+.\\" document formatting or typesetting system, including
+.\\" intermediate and printed output.
+.\\"
+.\\" This manual is distributed in the hope that it will be useful,
+.\\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+.\\" GNU General Public License for more details.
+.\\"
+.\\" You should have received a copy of the GNU General Public
+.\\" License along with this manual; if not, see
+.\\" <http://www.gnu.org/licenses/>.
+.TH PSYS_REGISTER 7 2010-06-08 libpsys "Psys Library Manual"
+.SH NAME
+psys_announce, psys_register - Add a package to the system package
+database
+.SH SYNOPSIS
+.B #include <psys.h>
+.sp
+.BI "int psys_announce_update(psys_pkg_t " pkg ", psys_err_t *" err );
+.br
+.BI "int psys_register_update(psys_pkg_t " pkg ", psys_err_t *" err );
+.br
+.SH DESCRIPTION
+.BR psys_announce_update ()
+reports to the system package manager that the calling program attempts
+to update the package specified by the package object
+.IR pkg .
+If the package manager objects to the attempt due to anticipated conflicts
+with the current package database or file system, or if
+.BR psys_announce_update ()
+encounters an error during execution, -1 is returned, and
+.I *err
+is set to an error object with more information about the abnormal return.
+Otherwise,
+.BR psys_announce_update ()
+returns 0.
+.PP
+If
+.BR psys_announce_update ()
+returns abnormally, the calling program shall not attempt the update
+of the announced package.
+On normal return, the package may be installed into the announced package's
+Data Directory (see
+.BR psysmeta(7)).
+.PP
+.BR psys_register_update ()
+requests the metadata of the package specified by the package object
+.I pkg
+to be updated in the system package database.
+On error,
+.BR psys_register_update ()
+returns -1 and sets
+.I *err
+like
+.BR psys_announce_update ().
+If the package has been successfully updated in the database, 0 is
+returned.
+.PP
+.I pkg
+must not be NULL when calling
+.BR psys_announce_update ()
+or
+.BR psys_register_update ().
+Otherwise, the program will be aborted.
+.SH RETURN VALUE
+0 is returned if
+.BR psys_announce_update ()
+or
+.BR psys_register_update ()
+returns normally.
+On abnormal return (when an error is reported), -1 is returned.
+.SH ERRORS
+.TP 4
+.B PSYS_EACCESS
+The calling process is not permitted to access the package management
+system.
+.TP 4
+.B PSYS_EARCH
+The architecture specified for package is not the same as the architecture
+of the already-installed package version.
+.TP 4
+.B PSYS_EINTERNAL
+An internal error occurred.
+.TP 4
+.B PSYS_LSBVER
+The system does not support the version of the LSB standard required by
+the package.
+.TP 4
+.B PSYS_ENOMEM
+An out-of-memory error occurred.
+.TP 4
+.B PSYS_ENOENT
+No version of the package is installed.
+.TP 4
+.B PSYS_ENOTIMPL
+The system does not implement the function.
+.TP 4
+.B PSYS_EVER
+The package's version is equal to or older than the already installed
+version. (See the version comparison rules specified in
+.BR psysmeta (7)).
+.SH EXAMPLE
+The following program update the simple "Hello World" program which is
+installed by the
+.BR psys_register()
+example program and updates its entry in the system package database.
+.nf
+
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <psys.h>
+
+#define HELLOWORLD_SCRIPT_2 \\
+	"#!/bin/sh \\n" \\
+	"if [ $# -gt 0 ]; then \\n" \\
+	"  echo \\"Hello $1!\\" \\n" \\
+	"else \\n" \\
+	"  echo \\"Hello World!\\" \\n" \\
+	"fi"
+
+static int update(void)
+{
+	FILE *f;
+
+	f = fopen("/opt/example.com/helloworld/bin/helloworld", "w");
+	if (!f) {
+		perror("fopen()");
+		return -1;		
+	}
+	if (fputs(HELLOWORLD_SCRIPT_2, f) == EOF) {
+		perror("fputs()");
+		return -1;
+	}
+	fclose(f);
+
+	return 0;
+}
+
+int main(int argc, char **argv)
+{
+	psys_pkg_t pkg;
+	psys_err_t err = NULL;
+
+	pkg = psys_pkg_new(
+		"example.com", "helloworld", "0.2", "3.0", "noarch");
+
+	if (!pkg) {
+		fprintf(stderr, "%s\\n", strerror(ENOMEM));
+		return EXIT_FAILURE;
+	}
+
+	psys_pkg_add_summary(pkg, "C", "A simple Hello World program");
+	psys_pkg_add_description(pkg, "C",
+		 "This is a simple  \\"Hello World\\" program. "
+		 "In its second version, the program can say "
+		 "given a thing as argument it can say \\"Hello\\" to!\\n"
+		 "\\n"
+		 "This is an example of a  program installed and "
+		 "updated using the psys library.");
+
+	if (psys_announce_update(pkg, &err)) {
+		fprintf(stderr,
+			"psys_announce_update(): %s\\n", psys_err_msg(err));
+		psys_err_free(err);
+		psys_pkg_free(pkg);
+		return EXIT_FAILURE;
+	}
+
+	if (update())
+		return EXIT_FAILURE;
+
+	if (psys_register_update(pkg, &err)) {
+		fprintf(stderr,
+			"psys_register_update(): %s\\n", psys_err_msg(err));
+		psys_err_free(err);
+		psys_pkg_free(pkg);
+		return EXIT_FAILURE;
+	}
+
+	psys_pkg_free(pkg);
+	return EXIT_SUCCESS;
+}
+.fi
+.SH SEE ALSO
+.br psys (7),
+.BR psys_register (3),
+.BR psys_unregister (3)
+.SH COLOPHON
+This page is part of the documentation created by the Psys Libray Project.
+See the project page at http://page/ for more information about the
+project and for reporting bugs.

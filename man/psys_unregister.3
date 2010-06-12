@@ -1,0 +1,161 @@
+.\\" Copyright (c) 2010, Denis Washington <dwashington@gmx.net>
+.\\"
+.\\" This is free documentation; you can redistribute it and/or
+.\\" modify it under the terms of the GNU General Public License as
+.\\" published by the Free Software Foundation; either version 3 of
+.\\" the License, or (at your option) any later version.
+.\\"
+.\\" The GNU General Public License's references to "object code"
+.\\" and "executables" are to be interpreted as the output of any
+.\\" document formatting or typesetting system, including
+.\\" intermediate and printed output.
+.\\"
+.\\" This manual is distributed in the hope that it will be useful,
+.\\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+.\\" GNU General Public License for more details.
+.\\"
+.\\" You should have received a copy of the GNU General Public
+.\\" License along with this manual; if not, see
+.\\" <http://www.gnu.org/licenses/>.
+.TH PSYS_REGISTER 7 2010-06-08 libpsys "Psys Library Manual"
+.SH NAME
+psys_unannounce, psys_unregister - Remove a package from the system
+package database
+.SH SYNOPSIS
+.B #include <psys.h>
+.sp
+.BI "int psys_unannounce(const char *" vendor ", const char *" name ,
+.br
+.BI "                    psys_err_t *" err );
+.br
+.BI "int psys_unregister(const char *" vendor ", const char *" name ,
+.br
+.BI "                    psys_err_t *" err );
+.SH DESCRIPTION
+.BR psys_unregister ()
+reports to the system package manager that the calling program attempts
+to uninstall the package with the specified
+.I vendor
+and
+.I name
+(see
+.BR psysmeta (7)).
+If the package manager objects to the attempt, or if
+.BR psys_unregister ()
+encounters an error during execution, -1 is returned, and
+.I *err
+is set to an error object with more information about the abnormal return.
+Otherwise,
+.BR psys_unregister ()
+returns 0.
+.PP
+If
+.BR psys_unregister ()
+returns abnormally, the calling program shall not attempt the
+uninstallation of the announced package.
+On normal return, the files installed by the "unannounced" package may be
+removed. The package's data directory (see
+.BR psysmeta(7))
+should be deleted completely.
+.PP
+.BR psys_unregister ()
+requests the removal of the package with the specified
+.I vendor
+and
+.I name
+from the system package database.
+On error,
+.BR psys_unregister ()
+returns -1 and sets
+.I *err
+like
+.BR psys_unannounce ().
+If the package has been successfully removed from the database, 0 is
+returned.
+.PP
+.I vendor
+and
+.I name
+must not be NULL when calling
+.BR psys_unannounce ()
+or
+.BR psys_unregister ().
+Otherwise, the program will be aborted.
+.SH RETURN VALUE
+0 is returned if
+.BR psys_unannounce ()
+or
+.BR psys_unregister ()
+returns normally.
+On abnormal return (when an error is reported), -1 is returned.
+.SH ERRORS
+.TP 4
+.B PSYS_EACCESS
+The calling process is not permitted to access the package management
+system.
+.TP 4
+.B PSYS_EINTERNAL
+An internal error occurred.
+.TP 4
+.B PSYS_ENOENT
+The specified package is not installed.
+.TP 4
+.B PSYS_ENOMEM
+An out-of-memory error occurred.
+.TP 4
+.B PSYS_ENOTIMPL
+The system does not implement the function.
+.SH EXAMPLE
+The following program uninstalls the simple "Hello World" program
+installed by the
+.BR psys_register (3)
+example program and removes it from the system package database.
+.nf
+
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <psys.h>
+
+static int uninstall(void)
+{
+    if (system("rm -rf /opt/example.com/helloworld")) {
+        perror("system()");
+        return -1;
+    }
+    return 0;
+}
+
+int main(int argc, char **argv)
+{
+    psys_err_t err = NULL;
+
+    if (psys_unannounce("example.com", "helloworld", &err)) {
+        fprintf(stderr, "psys_unannounce(): %s\\n", psys_err_msg(err));
+        psys_err_free(err);
+        return EXIT_FAILURE;
+    }
+
+    if (uninstall())
+        return EXIT_FAILURE;
+
+    if (psys_unregister("example.com", "helloworld", &err)) {
+        fprintf(stderr, "psys_unregister(): %s\\n", psys_err_msg(err));
+        psys_err_free(err);
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+.fi
+.SH SEE ALSO
+.BR psys (7)
+.BR psys_register (3),
+.BR psys_register_update (3)
+.SH COLOPHON
+This page is part of the documentation created by the Psys Libray Project.
+See the project page at http://page/ for more information about the
+project and for reporting bugs.

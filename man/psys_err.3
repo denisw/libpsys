@@ -1,0 +1,76 @@
+.\" Copyright (c) 2010, Denis Washington <dwashington@gmx.net>
+.\"
+.\" This is free documentation; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public License as
+.\" published by the Free Software Foundation; either version 3 of
+.\" the License, or (at your option) any later version.
+.\"
+.\" The GNU General Public License's references to "object code"
+.\" and "executables" are to be interpreted as the output of any
+.\" document formatting or typesetting system, including
+.\" intermediate and printed output.
+.\"
+.\" This manual is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public
+.\" License along with this manual; if not, see
+.\" <http://www.gnu.org/licenses/>.
+.TH PSYS_ERR 3 2010-06-08 libpsys "Psys Library Manual"
+.SH NAME
+psys_err_code, psys_err_msg - Get
+.BR psys (7)
+error information
+.SH SYNOPSIS
+.B #include <psys.h>
+.sp
+.BI "int psys_err_code(psys_err_t " err );
+.br
+.BI "const char *psys_err_msg(psys_err_t " err );
+.SH DESCRIPTION
+.BR psys_err_code ()
+returns the error code stored in error object
+.IR err .
+The following error codes exist:
+.PP
+.B PSYS_EACCESS
+.br
+.B PSYS_EARCH
+.br
+.B PSYS_ECONFLICT
+.br
+.B PSYS_EEXIST
+.br
+.B PSYS_EINTERNAL
+.br
+.B PSYS_ELSBVER
+.br
+.B PSYS_ENOMEM
+.br
+.B PSYS_ENOENT
+.br
+.B PSYS_ENOTIMPL
+.br
+.B PSYS_EVER
+.PP
+Which of these error codes are returned by a given function, and the
+meaning of these codes in the context of that function, can be looked up
+in the respective function's manual page.
+.PP
+.BR psys_err_msg ()
+returns the error message stored in error object
+.IR err .
+.SH RETURN VALUE
+See
+.BR DESCRIPTION .
+.SH SEE ALSO
+.BR psys (7),
+.BR psys_register (3),
+.BR psys_register_update (3),
+.BR psys_unregister (3)
+.SH COLOPHON
+This page is part of the documentation created by the Psys Libray Project.
+See the project page at http://page/ for more information about the
+project and for reporting bugs.

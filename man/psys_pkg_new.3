@@ -1,0 +1,121 @@
+.\" Copyright (c) 2010, Denis Washington <dwashington@gmx.net>
+.\"
+.\" This is free documentation; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public License as
+.\" published by the Free Software Foundation; either version 3 of
+.\" the License, or (at your option) any later version.
+.\"
+.\" The GNU General Public License's references to "object code"
+.\" and "executables" are to be interpreted as the output of any
+.\" document formatting or typesetting system, including
+.\" intermediate and printed output.
+.\"
+.\" This manual is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public
+.\" License along with this manual; if not, see
+.\" <http://www.gnu.org/licenses/>.
+.TH PSYS_PKG_NEW 3 2010-06-08 libpsys "Psys Library Manual"
+.SH NAME
+psys_pkg_new, psys_pkg_free - Create and destroy
+.BR psys (3)
+package objects
+.SH SYNOPSIS
+.B #include <psys.h>
+.sp
+.BI "psys_pkg_t psys_pkg_new(const char *" vendor ,
+.br
+.BI "                        const char *" name ,
+.br
+.BI "                        const char *" version ,
+.br
+.BI "                        const char *" lsbversion ,
+.br
+.BI "                        const char *" arch );
+.sp
+.BI "void psys_pkg_free(psys_pkg_t " pkg );
+.SH DESCRIPTION
+.BR psys_pkg_new ()
+allocates a
+.BR psys (7)
+package object and initializes its metadata fields as follows:
+.IP - 4
+The value of
+.I vendor
+is stored in the package object's Vendor field.
+.IP - 4
+The value of
+.I name
+is stored in the package object's Name field.
+.IP - 4
+The value of
+.I version
+is stored in the package object's Version field.
+.IP - 4
+The value of
+.I lsbversion
+is stored in the package object's LSB Version field.
+.IP - 4
+The value of
+.I arch
+is stored in the package object's Architecture field.
+.IP - 4
+All other metadata fields of the package object are set to NULL.
+.PP
+For a description of the mentioned metadata fields, see
+.BR psysmeta (7).
+.PP
+After initialization,
+.BR psys_pkg_new()
+returns a pointer to the created package object to the caller.
+If the memory required for the object could not be allocated,
+NULL is returned instead.
+.PP
+The arguments passed to
+.BR psys_pkg_new ()
+must not be NULL, and must fulfill the requirements specified for the
+respective metadata fields in
+.BR psysmeta (7).
+Otherwise,
+.BR psys_pkg_new ()
+will abort the calling program.
+.PP
+.BR psys_pkg_free ()
+frees all memory allocated for package object
+.IR pkg
+(which must not be used afterwards).
+If
+.I pkg
+is NULL, no action is taken.
+
+.SH RETURN VALUE
+If allocation was successful,
+.BR psys_pkg_new ()
+returns a pointer to the created package object.
+Otherwise, it returns NULL.
+.PP
+.BR psys_pkg_free ()
+returns no value.
+.SH NOTES
+The strings passed to
+.BR psys_pkg_new ()
+are copied internally.
+Thus, they can be subsequently changed or freed without affecting the
+created package object.
+.SH SEE ALSO
+.BR psys (7),
+.BR psysmeta (7),
+.BR psys_pkg_vendor (3),
+.BR psys_pkg_name (3),
+.BR psys_pkg_version (3),
+.BR psys_pkg_lsbversion(3),
+.BR psys_pkg_arch (3),
+.BR psys_pkg_summary (3),
+.BR psys_pkg_description (3)
+.SH COLOPHON
+This page is part of the documentation created by the Psys Libray Project.
+See the project page at http://page/ for more information about the
+project and for reporting bugs.
