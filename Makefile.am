@@ -1,4 +1,4 @@
-SUBDIRS = lib
+SUBDIRS = lib man
 
 if FALLBACK_ENABLED
 SUBDIRS += fallback
