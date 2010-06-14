@@ -24,11 +24,13 @@ psys_err_code, psys_err_msg - Get
 .BR psys (7)
 error information
 .SH SYNOPSIS
+.nf
 .B #include <psys.h>
 .sp
 .BI "int psys_err_code(psys_err_t " err );
 .br
 .BI "const char *psys_err_msg(psys_err_t " err );
+.fi
 .SH DESCRIPTION
 .BR psys_err_code ()
 returns the error code stored in error object
@@ -72,5 +74,5 @@ See
 .BR psys_unregister (3)
 .SH COLOPHON
 This page is part of the documentation created by the Psys Libray Project.
-See the project page at http://page/ for more information about the
-project and for reporting bugs.
+See the project page at http://gitorious.org/libpsys/ for more information
+about the project and for reporting bugs.

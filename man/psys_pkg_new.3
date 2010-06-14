@@ -24,6 +24,7 @@ psys_pkg_new, psys_pkg_free - Create and destroy
 .BR psys (3)
 package objects
 .SH SYNOPSIS
+.nf
 .B #include <psys.h>
 .sp
 .BI "psys_pkg_t psys_pkg_new(const char *" vendor ,
@@ -37,32 +38,33 @@ package objects
 .BI "                        const char *" arch );
 .sp
 .BI "void psys_pkg_free(psys_pkg_t " pkg );
+.fi
 .SH DESCRIPTION
 .BR psys_pkg_new ()
 allocates a
 .BR psys (7)
 package object and initializes its metadata fields as follows:
-.IP - 4
+.IP \(bu 4
 The value of
 .I vendor
 is stored in the package object's Vendor field.
-.IP - 4
+.IP \(bu 4
 The value of
 .I name
 is stored in the package object's Name field.
-.IP - 4
+.IP \(bu 4
 The value of
 .I version
 is stored in the package object's Version field.
-.IP - 4
+.IP \(bu 4
 The value of
 .I lsbversion
 is stored in the package object's LSB Version field.
-.IP - 4
+.IP \(bu 4
 The value of
 .I arch
 is stored in the package object's Architecture field.
-.IP - 4
+.IP \(bu 4
 All other metadata fields of the package object are set to NULL.
 .PP
 For a description of the mentioned metadata fields, see
@@ -111,11 +113,11 @@ created package object.
 .BR psys_pkg_vendor (3),
 .BR psys_pkg_name (3),
 .BR psys_pkg_version (3),
-.BR psys_pkg_lsbversion(3),
+.BR psys_pkg_lsbversion (3),
 .BR psys_pkg_arch (3),
 .BR psys_pkg_summary (3),
 .BR psys_pkg_description (3)
 .SH COLOPHON
 This page is part of the documentation created by the Psys Libray Project.
-See the project page at http://page/ for more information about the
-project and for reporting bugs.
+See the project page at http://gitorious.org/libpsys/ for more information
+about the project and for reporting bugs.

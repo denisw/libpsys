@@ -24,6 +24,7 @@ psys_tlist_locale, psys_tlist_value, psys_tlist_next - Traverse
 .BR psys (7)
 translation lists
 .SH SYNOPSIS
+.nf
 .B #include <psys.h>
 .sp
 .BI "const char *psys_tlist_locale(psys_tlist_t " elem );
@@ -31,6 +32,7 @@ translation lists
 .BI "const char *psys_tlist_value(psys_tlist_t " elem );
 .br
 .BI "psys_tlist_t psys_tlist_next(psys_tlist_t " elem );
+.fi
 .SH DESCRIPTION
 For a conceptual overview of translation lists, see
 .BR psys (7).
@@ -112,5 +114,5 @@ which makes prepending the most efficient method to add new elements.)
 .BR psys (7)
 .SH COLOPHON
 This page is part of the documentation created by the Psys Libray Project.
-See the project page at http://page/ for more information about the
-project and for reporting bugs.
+See the project page at http://gitorious.org/libpsys/ for more information
+about the project and for reporting bugs.

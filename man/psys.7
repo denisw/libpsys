@@ -22,6 +22,7 @@
 .SH NAME
 psys - Overview of the psys library
 .SH SYNOPSIS
+.nf
 .B #include <psys.h>
 .sp
 .BI "typedef struct _psys_pkg *" psys_pkg_t ;
@@ -29,6 +30,7 @@ psys - Overview of the psys library
 .BI "typedef struct _psys_err *" psys_err_t ;
 .br
 .BI "typedef struct _psys_tlist *" psys_tlist_t ;
+.fi
 .SH DESCRIPTION
 The
 .B psys
@@ -125,7 +127,7 @@ function, and freed with
 For more information about the metadata fields of a package object and
 how their values can be set or received, see
 .BR psysmeta(7).
-.SS Handling Errors
+.SS Error Handling
 If a
 .B psys
 announcement or (un)registration function detects a package/system
@@ -196,5 +198,5 @@ example for their usage.
 [2] http://www.pathname.com/fhs/pub/fhs-2.3.html
 .SH COLOPHON
 This page is part of the documentation created by the Psys Libray Project.
-See the project page at http://page/ for more information about the
-project and for reporting bugs.
+See the project page at http://gitorious.org/libpsys/ for more information
+about the project and for reporting bugs.
