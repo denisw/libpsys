@@ -91,6 +91,19 @@ configure with --enable-fallbacks:
 
 Note that you need rpmlib installed for this.
 
+After having installed the psys library, you can test it by building and
+running the examples in the examples/ sub-directory (you need to have a
+psys backend, such as the fallback backend, and a package manager supported
+by that backend installed for this):
+
+    cd examples/helloworld
+    make
+    ./installer
+    ./updater
+    ./uninstaller
+
+(You will most probably have to run the example programs as root.)
+
 4. Documentation
    -------------
 The psys library interface is documented in man page format; see the
@@ -98,6 +111,9 @@ psys(7) man page distributed with this library to get started.
 Alternatively, all pages are available online at:
 
 http://gitorious.org/libpsys/pages/Home
+
+Also have a look at the examples in the examples/ sub-directory to see the
+psys library in action. (See "3. Installation").
 
 5. Contributing
    ------------
