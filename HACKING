@@ -86,7 +86,7 @@ These functions should have the semantics documented for the equally-named
 psys library interface functions (without the leading underscore) in the
 respective functions' man pages or online at:
 
-http://docs/
+http://gitorious.org/libpsys/pages/ManPages
 
 When implementing a fallback backend directly in the psys library source
 code, the mentioned functions must be prefixed with an identifier which

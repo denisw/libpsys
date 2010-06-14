@@ -63,24 +63,31 @@ implements the actual core functionality of the psys library interface. It
 can either be implemented by the package manager / distribution directly
 (see HACKING) or, if it isn't, by a "fallback backend" built into the psys
 library itself. Currently, the psys library comes with a fallback backend
-for RPM-based distributions; others may be added in the future.
+for RPM-based distributions; others may be added in the future. See HACKING
+for general information about writing a psys library backend.
 
-See HACKING for general information about writing a psys library backend.
+The availability of fallback backends means that the psys library can, in
+principal, be used on today's distros by installation programs which ship
+the library theirselves or statically link to it. As the psys library only
+takes care of the commmunication with the package manager, but leaves the
+actual installation / update / uninstallation to the installation program,
+adopting an existing installer to use the psys interface should require
+relatively little modifications to the installer's code. 
 
 3. Installation
    ------------
 The psys library can be built as any autotools-powered project with
 
-  ./configure
-  make
-  make install
+    ./configure
+    make
+    make install
 
-(the last command as root or sudo.) To build the fallback backend,
+(the last command as root or sudo.) To build with the fallback backend,
 configure with --enable-fallbacks:
 
-  ./configure --enable-fallback
-  make
-  make install
+    ./configure --enable-fallback
+    make
+    make install
 
 Note that you need rpmlib installed for this.
 
@@ -90,7 +97,7 @@ The psys library interface is documented in man page format; see the
 psys(7) man page distributed with this library to get started.
 Alternatively, all pages are available online at:
 
-http://docs/
+http://gitorious.org/libpsys/pages/Home
 
 5. Contributing
    ------------
@@ -98,12 +105,12 @@ Contributions of any kind are, of course, very welcome! Please submit
 bug reports, patches, feature requests and branch merge requests to
 the mailing list:
 
-http://mailinglist/
+http://groups.google.com/group/libpsys
 
 To track the development of the psys library and get the latest source
 code, visit the project page on Gitorious:
 
-http://projectpage/
+http://gitorious.org/libpsys
 
 You are free to publish any number psys library branches there if you like.
 

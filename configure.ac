@@ -1,4 +1,7 @@
-AC_INIT([libpsys], [0.1])
+AC_INIT([libpsys], [0.1],
+	[http://groups.google.com/group/libpsys],
+	[libpsys],
+	[http://gitorious.org/libpsys])
 AC_PREREQ([2.59])
 AM_INIT_AUTOMAKE([foreign])
 LT_INIT
@@ -23,4 +26,5 @@ AC_OUTPUT(
 	Makefile
 	fallback/Makefile
 	lib/Makefile
+	man/Makefile
 )
