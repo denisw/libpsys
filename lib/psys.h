@@ -88,10 +88,10 @@ extern psys_tlist_t psys_pkg_summary(psys_pkg_t pkg);
 extern psys_tlist_t psys_pkg_description(psys_pkg_t pkg);
 
 /* Adding optional package metadata */
-extern void psys_pkg_add_summary(psys_pkg_t pkg, const char *locale,
-				 const char *summary);
-extern void psys_pkg_add_description(psys_pkg_t pkg, const char *locale,
-				     const char *value);
+extern int psys_pkg_add_summary(psys_pkg_t pkg, const char *locale,
+				const char *summary);
+extern int psys_pkg_add_description(psys_pkg_t pkg, const char *locale,
+				    const char *value);
 
 /* Retrieving and adding package extra files */
 extern psys_plist_t psys_pkg_extras(psys_pkg_t pkg);

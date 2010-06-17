@@ -382,16 +382,36 @@ psys_tlist_t psys_pkg_description(psys_pkg_t pkg)
 
 /*** Adding optional package metadata ****************************************/
 
-void psys_pkg_add_summary(psys_pkg_t pkg, const char *locale,
-			  const char *summary)
+int psys_pkg_add_summary(psys_pkg_t pkg, const char *locale,
+			 const char *summary)
 {
-	pkg->summary = tlist_add(pkg->summary, locale, summary);
+	psys_tlist_t newlist;
+
+	assert(pkg != NULL);
+	assert(locale != NULL);
+	assert(summary != NULL);
+
+	newlist = tlist_add(pkg->summary, locale, summary);
+	if (!newlist)
+		return -1;
+	pkg->summary = newlist;
+	return 0;
 }
 
-void psys_pkg_add_description(psys_pkg_t pkg, const char *locale,
-			      const char *description)
+int psys_pkg_add_description(psys_pkg_t pkg, const char *locale,
+			     const char *description)
 {
-	pkg->description = tlist_add(pkg->description, locale, description);
+	psys_tlist_t newlist;
+
+	assert(pkg != NULL);
+	assert(locale != NULL);
+	assert(description != NULL);
+
+	newlist = tlist_add(pkg->description, locale, description);
+	if (!newlist)
+		return -1;
+	pkg->description = newlist;
+	return 0;
 }
 
 /*** Retrieving and adding package extra files ********************************/
