@@ -126,6 +126,7 @@ psys_pkg_t psys_pkg_copy(psys_pkg_t pkg)
 static void assert_vendor_valid(const char *vendor)
 {
 	const char *c;
+	assert(vendor != NULL);
 	for (c = vendor; *c; c++)
 		assert(xislower(*c) || xisdigit(*c) || *c == '.');
 }
@@ -133,6 +134,7 @@ static void assert_vendor_valid(const char *vendor)
 static void assert_name_valid(const char *name)
 {
 	const char *c;
+	assert(name != NULL);
 	for (c = name; *c; c++)
 		assert(xislower(*c) || xisdigit(*c) || *c == '-');
 }
@@ -165,17 +167,20 @@ static int version_is_valid(const char *version)
 
 static void assert_version_valid(const char *version)
 {
+	assert(version != NULL);
 	assert(version_is_valid(version));
 }
 
 static void assert_lsbversion_valid(const char *lsbversion)
 {
+	assert(lsbversion != NULL);
 	assert(xisdigit(lsbversion[0]) && lsbversion[1] == '.' &&
 	       xisdigit(lsbversion[2]) && lsbversion[3] == '\0');
 }
 
 static void assert_arch_valid(const char *arch)
 {
+	assert(arch != NULL);
 	assert(!strcmp(arch, "amd64") ||
 	       !strcmp(arch, "ia32") ||
 	       !strcmp(arch, "ia64") ||
@@ -186,19 +191,27 @@ static void assert_arch_valid(const char *arch)
 	       !strcmp(arch, "s390x"));
 }
 
+static void assert_tlist_valid(psys_tlist_t list)
+{
+	psys_tlist_t l;
+
+	for (l = list; l; l = psys_tlist_next(l)) {
+		assert(psys_tlist_locale(l) != NULL);
+		assert(psys_tlist_value(l) != NULL);
+	}
+}
+
 static void assert_plist_valid(psys_plist_t list)
 {
-	if (list) {
-		psys_plist_t l;
+	psys_plist_t l;
 
-		for (l = list; l; l = psys_plist_next(l)) {
-			const char *path;
+	for (l = list; l; l = psys_plist_next(l)) {
+		const char *path;
 
-			path = psys_plist_path(l);
-			assert(path != NULL);
-			assert(psys_path_is_canonical(path));
-			assert(path[strlen(path) - 1] != '/');
-		}
+		path = psys_plist_path(l);
+		assert(path != NULL);
+		assert(psys_path_is_canonical(path));
+		assert(path[strlen(path) - 1] != '/');
 	}
 }
 
@@ -209,6 +222,8 @@ void psys_pkg_assert_valid(psys_pkg_t pkg)
 	assert_version_valid(psys_pkg_version(pkg));
 	assert_lsbversion_valid(psys_pkg_lsbversion(pkg));
 	assert_arch_valid(psys_pkg_arch(pkg));
+	assert_tlist_valid(psys_pkg_summary(pkg));
+	assert_tlist_valid(psys_pkg_description(pkg));
 	assert_plist_valid(psys_pkg_extras(pkg));
 }
 
