@@ -400,8 +400,10 @@ static int file_traversal_fn(const char *path, const struct stat *st,
 
 	default:
 		l = flist_new(path, st);
-		if (!l)
+		if (!l) {
+			psys_err_set_nomem(_err);
 			return -1;
+		}
 
 		if (_flist_last) {
 			_flist_last->next = l;
