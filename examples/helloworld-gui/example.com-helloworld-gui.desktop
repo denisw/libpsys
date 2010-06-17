@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Hello World!
+Comment=A simple program greeting the world in a window
+Exec=/opt/example.com/helloworld-gui/bin/helloworld-gui
+Icon=/opt/example.com/helloworld-gui/share/Tux_small.png
+Categories=Utility;
