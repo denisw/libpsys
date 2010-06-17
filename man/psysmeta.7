@@ -80,14 +80,14 @@ Note that the
 .BR psys (7)
 library relies on the assumption that the represented package's data
 files will be installed in this directory when checking for conflicts with
-the current file system; thus, it is strongly advised to make as few
-modifications outside of the Data Directory as possible during the
-package's installation or update.
-(Unfortunately, adding files to other directories is often needed in
-practice, for instance in the case of init scripts or .desktop files;
-however, such modifications should be kept to a minimum and, even more
-importantly, be VERY carefully checked for conflicts with
-already-installed files.)
+the current file system.
+If files need to be added outside of the data directory (which
+unfortunately is inevitable in some cases, e.g. when .desktop files or
+init scripts should be installed), their destination paths must be listed
+in the Extra Files metadata field.
+(See the
+.B Extra Files
+section of this man page.)
 .PP
 The value of the Data Directory field can be received with
 .BR psys_pkg_dir (3).
@@ -251,6 +251,40 @@ calling
 .BR psys_pkg_add_description (3).
 A list of all Description field values can be received by calling
 .BR psys_pkg_description (3).
+.SS Extra Files (optional)
+The Extra Files metadata field holds a list of all absolute file names
+outside of the represented package's data directory (see above) which
+need to be reserved for the package while it is installed.
+The package manager should check that these files do not exist when the
+package is announced.
+If it approves the announcement, the caller may create files with the
+specified path names (in addition to any files in the package's data
+directory).
+.PP
+Note that a package should specify
+.IR "as few extra files as possible" .
+They should only be files which
+.I must
+reside at specific locations for technical reasons (for instance desktop
+entry files which need to be in
+.I $XDG_DATA_DIRS/applications
+to appear in the desktop menu, or init scripts, which must be installed to
+.IR /etc/init.d ).
+All other files of the package should be installed into its data directory.
+Also, extra files should be named so that they include the Name and Vendor
+metadata values of the package whenever possible. (For instance, a desktop
+entry file of a package named
+.I helloworld
+with vendor
+.I example.com
+should be named something like
+.IR example.com-helloworld.desktop .)
+.PP
+File names may be added to Extra Files field of a package object with
+.BR psys_pkg_add_extra (3).
+The value of the Extra Files, which lists all extra files, can be received
+by calling
+.BR psys_pkg_extras (3).
 .SH SEE ALSO
 .BR psys (7)
 .sp

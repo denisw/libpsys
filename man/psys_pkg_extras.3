@@ -1,0 +1,88 @@
+.\" Copyright (c) 2010, Denis Washington <dwashington@gmx.net>
+.\"
+.\" This is free documentation; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public License as
+.\" published by the Free Software Foundation; either version 3 of
+.\" the License, or (at your option) any later version.
+.\"
+.\" The GNU General Public License's references to "object code"
+.\" and "executables" are to be interpreted as the output of any
+.\" document formatting or typesetting system, including
+.\" intermediate and printed output.
+.\"
+.\" This manual is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public
+.\" License along with this manual; if not, see
+.\" <http://www.gnu.org/licenses/>.
+.TH PSYS_PKG_EXTRAS 3 2010-06-15 libpsys "Psys Library Manual"
+.SH NAME
+psys_pkg_extras, psys_pkg_add_extra - Get and add to a package object's
+Extra Files value
+.SH SYNOPSIS
+.nf
+.B #include <psys.h>
+.sp
+.BI "psys_plist_t psys_pkg_extras(psys_pkg_t " pkg );
+.br
+.BI "void psys_pkg_add_extra(psys_pkg_t " pkg ", const char *" path );
+.fi
+.SH DESCRIPTION
+.BR psys_pkg_extras ()
+returns a list (traversable via the functions described in
+.BR psys_plist (3))
+containing the paths stored in the Extra Files metadata field of package
+object
+.IR pkg .
+(For a description of the Extra Files field, see
+.BR psysmeta (7).)
+If no path has been previously add to the Extra Files field value of
+.IR pkg ,
+.BR psys_pkg_extras ()
+returns NULL.
+.PP
+.BR psys_pkg_add_extra ()
+adds the value of
+.I path
+to the list of paths stored in the Extra Files field of
+.IR pkg .
+.I path
+must be absolute and canonical (free of empty,
+.I .
+and
+.I ..
+path components); otherwise,
+.BR psys_pkg_add_extra ()
+will abort the calling program.
+.PP
+All arguments to
+.BR psys_pkg_extras ()
+and
+.BR psys_pkg_add_extra ()
+must not be NULL.
+Otherwise, the calling program will be aborted.
+.SH RETURN VALUE
+.BR psys_pkg_extras ()
+returns the Extra Files field values of
+.I pkg
+as a path list.
+If no path has been added to the Extra Files field of
+.IR pkg ,
+.BR psys_pkg_extras ()
+returns NULL.
+.PP
+.BR psys_pkg_add_extra ()
+returns 0 if
+.I path
+has been successfully added to the Extra Files field. If not enough
+memory is available to store the value, -1 is returned.
+.SH SEE ALSO
+.BR psys (7),
+.BR psysmeta (7)
+.SH COLOPHON
+This page is part of the documentation created by the Psys Libray Project.
+See the project page at http://gitorious.org/libpsys/ for more information
+about the project and for reporting bugs.

@@ -35,6 +35,7 @@
 
 #include "psys.h"
 #include "psys_impl.h"
+#include "psys_private.h"
 
 static const char *IMPL_LIB = "libpsys_impl.so";
 
@@ -44,6 +45,11 @@ struct _psys_tlist {
 	struct _psys_tlist *next;
 	char *locale;
 	char *value;
+};
+
+struct _psys_plist {
+	struct _psys_plist *next;
+	char *path;
 };
 
 struct _psys_pkg {
@@ -60,6 +66,9 @@ struct _psys_pkg {
 	/* Optional metadata */
 	psys_tlist_t summary;
 	psys_tlist_t description;
+
+	/* Extra files */
+	psys_plist_t extras;
 };
 
 /*** Handling errors **********************************************************/
@@ -185,6 +194,72 @@ psys_tlist_t psys_tlist_next(psys_tlist_t elem)
 	return elem->next;
 }
 
+/*** Traversing path lists ****************************************************/
+
+static void plist_free(psys_plist_t list)
+{
+	if (list) {
+		psys_plist_t l;
+		psys_plist_t next;
+
+		l = list;
+		while (l) {
+			if (l->path)
+				free(l->path);
+			next = l->next;
+			free(l);
+			l = next;
+		}
+	}
+}
+
+static psys_plist_t plist_add(psys_plist_t list, const char *path)
+{
+	psys_plist_t elem;
+
+	assert (path != NULL);
+	assert (path[0] == '/' && "Path must be absolute");
+	assert (psys_path_is_canonical(path));
+
+	elem = malloc(sizeof(*elem));
+	if (!elem)
+		return NULL;
+
+	elem->path = strdup(path);
+	if (!elem->path) {
+		plist_free(elem);
+		return NULL;
+	}
+
+	/*
+	 * Strip trailing slashes so that we get completely
+	 * normalized paths
+	 */
+	if (elem->path[strlen(elem->path) - 1] == '/')
+		elem->path[strlen(elem->path) - 1] = '\0';
+
+	if (list)
+		/*
+		 * Like with translation lists, prepending is just the
+		 * most efficient thing to do.
+		 */
+		elem->next = list;
+	else
+		elem->next = NULL;
+
+	return elem;
+}
+
+const char *psys_plist_path(psys_plist_t elem)
+{
+	return elem->path;
+}
+
+psys_plist_t psys_plist_next(psys_plist_t elem)
+{
+	return elem->next;
+}
+
 /*** Creating and freeing package objects *************************************/
 
 psys_pkg_t psys_pkg_new(const char *vendor, const char *name,
@@ -221,6 +296,7 @@ psys_pkg_t psys_pkg_new(const char *vendor, const char *name,
 
 	pkg->summary = NULL;
 	pkg->description = NULL;
+	pkg->extras = NULL;
 
 	psys_pkg_assert_valid(pkg);
 	return pkg;
@@ -244,6 +320,7 @@ void psys_pkg_free(psys_pkg_t pkg)
 
 		tlist_free(pkg->summary);
 		tlist_free(pkg->description);
+		plist_free(pkg->extras);
 
 		free(pkg);
 	}
@@ -315,6 +392,28 @@ void psys_pkg_add_description(psys_pkg_t pkg, const char *locale,
 			      const char *description)
 {
 	pkg->description = tlist_add(pkg->description, locale, description);
+}
+
+/*** Retrieving and adding package extra files ********************************/
+
+psys_plist_t psys_pkg_extras(psys_pkg_t pkg)
+{
+	assert(pkg != NULL);
+	return pkg->extras;
+}
+
+int psys_pkg_add_extra(psys_pkg_t pkg, const char *path)
+{
+	psys_plist_t newlist;
+
+	assert(pkg != NULL);
+	assert(path != NULL);
+
+	newlist = plist_add(pkg->extras, path);
+	if (!newlist)
+		return -1;
+	pkg->extras = newlist;
+	return 0;
 }
 
 /*** Adding packages to the system package database ***************************/

@@ -35,10 +35,12 @@
 #include <fcntl.h>
 #include <grp.h>
 #include <libgen.h>
+#include <limits.h>
 #include <pwd.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <rpm/rpmlib.h>
 #include <rpm/rpmdb.h>
@@ -170,6 +172,37 @@ static int ensure_not_installed(rpmts ts, const char *name, psys_err_t *err)
 	return 0;
 }
 
+static int ensure_no_conflict(psys_plist_t p, psys_err_t *err)
+{
+	int rc;
+
+	rc = access(psys_plist_path(p), F_OK);
+	if (rc == 0) {
+		psys_err_set(err, PSYS_ECONFLICT,
+			     "File name `%s' is already in use",
+			     psys_plist_path(p));
+		return -1;
+	} else if (errno != ENOENT) {
+		psys_err_set(err, PSYS_EINTERNAL,
+			     "Could not check existence of file name "
+			     "`%s': %s",
+			     psys_plist_path(p), strerror(errno));
+		return -1;
+	}
+	return 0;
+}
+
+static int ensure_no_conflicting_extras(psys_pkg_t pkg, psys_err_t *err) {
+	psys_plist_t e;
+
+	for (e = psys_pkg_extras(pkg); e; e = psys_plist_next(e)) {
+		if (ensure_no_conflict(e, err))
+			return -1;
+	}
+
+	return 0;
+}
+
 static void add_i18n_entry(Header header, int tag, psys_tlist_t l)
 {
 	for (; l; l = psys_tlist_next(l)) {
@@ -268,6 +301,121 @@ static int ensure_version_newer(psys_pkg_t pkg, Header installed,
 	} else {
 		return 0;
 	}
+}
+
+static char *canonicalize_path(const char *path, psys_err_t *err)
+{
+	char *rpath;
+
+	rpath = realpath(path, NULL);
+	if (!rpath) {
+		psys_err_set(err, PSYS_EINTERNAL,
+			     "Cannot canonicalize path `%s': %s",
+			     path, strerror(errno));
+		return NULL;
+	}
+	return rpath;
+}
+
+static int ensure_no_new_conflicting_extras(psys_pkg_t pkg, Header installed,
+					    psys_err_t *err)
+{
+	int ret;
+	char **basenames = NULL;
+	char **dirnames = NULL;
+	int *dirindexes;
+	unsigned int basenames_cnt, dirnames_cnt, dirindexes_cnt;
+	psys_plist_t p;
+
+	if (!headerGetEntry(installed, RPMTAG_BASENAMES, NULL,
+			    (void **) &basenames, &basenames_cnt)) {
+		psys_err_set(err, PSYS_EINTERNAL,
+			     "Error in headerGetEntry() (RPMTAG_BASENAMES)");
+		ret = -1;
+		goto out;
+	}
+	if (!headerGetEntry(installed, RPMTAG_DIRNAMES, NULL,
+			    (void **) &dirnames, &dirnames_cnt)) {
+		psys_err_set(err, PSYS_EINTERNAL,
+			     "Error in headerGetEntry() (RPMTAG_DIRNAMES)");
+		ret = -1;
+		goto out;
+	}
+	if (!headerGetEntry(installed, RPMTAG_DIRINDEXES, NULL,
+			    (void **) &dirindexes, &dirindexes_cnt)) {
+		psys_err_set(err, PSYS_EINTERNAL,
+			     "Error in headerGetEntry() (RPMTAG_DIRINDEXES)");
+		ret = -1;
+		goto out;
+	}	
+
+	if (basenames_cnt > dirindexes_cnt) {
+		psys_err_set(err, PSYS_EINTERNAL,
+			     "Malformed RPM header: more BASENAMES than "
+			     "DIRINDEXES");
+		ret = -1;
+		goto out;
+	}
+
+	for (p = psys_pkg_extras(pkg); p; p = psys_plist_next(p)) {
+		int i;
+
+		/*
+		 * Check if the extra file is already part of the installed
+		 * package's version. If so, everything is fine.
+		 */
+		for (i = 0; i < basenames_cnt; i++) {
+			char path[PATH_MAX];
+			char *cpath1, *cpath2;
+			int diff;
+
+			if (dirindexes[i] >= dirnames_cnt) {
+				psys_err_set(err, PSYS_EINTERNAL,
+					     "Malformed RPM header: "
+					     "out-of-bounds DIRINDEX");
+				ret = -1;
+				goto out;
+			}
+
+			snprintf(path, PATH_MAX, "%s/%s",
+				 dirnames[dirindexes[i]], basenames[i]);
+
+			cpath1 = canonicalize_path(psys_plist_path(p), err);
+			if (!cpath1) {
+				ret = -1;
+				goto out;		
+			}
+			cpath2 = canonicalize_path(path, err);
+			if (!cpath2) {
+				free(cpath1);
+				ret = -1;
+				goto out;		
+			}
+
+			diff = strcmp(cpath1, cpath2);
+			free(cpath1);
+			free(cpath2);
+			if (diff == 0)
+				goto nextfile;
+		}
+		
+		/*
+		 * If the extra file is new to this version of the package,
+		 * check that it does not exist yet.
+		 */
+		if (ensure_no_conflict(p, err))
+			return -1;
+nextfile:
+		continue;
+	}
+
+	ret = 0;
+out:
+	if (dirnames)
+		free(dirnames);
+	if (basenames)
+		free(basenames);
+	return ret;
 }
 
 /*** Adding file metadata *****************************************************/
@@ -589,6 +737,11 @@ int rpm_psys_announce(psys_pkg_t pkg, psys_err_t *err)
 		goto out;
 	}
 
+	if (ensure_no_conflicting_extras(pkg, err)) {
+		ret = -1;
+		goto out;
+	}
+
 	ret = 0;
 out:
 	if (rpmname)
@@ -788,6 +941,11 @@ int rpm_psys_announce_update(psys_pkg_t pkg, psys_err_t *err)
 	}
 
 	if (ensure_version_newer(pkg, header, err)) {
+		ret = -1;
+		goto out;
+	}
+
+	if (ensure_no_new_conflicting_extras(pkg, header, err)) {
 		ret = -1;
 		goto out;
 	}

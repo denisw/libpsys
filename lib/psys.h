@@ -49,6 +49,9 @@ typedef struct _psys_err *psys_err_t;
 /* Translation list type */
 typedef struct _psys_tlist *psys_tlist_t;
 
+/* Path list type */
+typedef struct _psys_plist *psys_plist_t;
+
 
 /* Handling errors */
 extern int psys_err_code(psys_err_t err);
@@ -59,6 +62,10 @@ extern void psys_err_free(psys_err_t err);
 extern const char *psys_tlist_locale(psys_tlist_t elem);
 extern const char *psys_tlist_value(psys_tlist_t elem);
 extern psys_tlist_t psys_tlist_next(psys_tlist_t elem);
+
+/* Traversing path lists */
+extern const char *psys_plist_path(psys_plist_t elem);
+extern psys_plist_t psys_plist_next(psys_plist_t elem);
 
 /* Creating and freeing package objects */
 extern psys_pkg_t psys_pkg_new(const char *vendor, const char *name,
@@ -85,6 +92,10 @@ extern void psys_pkg_add_summary(psys_pkg_t pkg, const char *locale,
 				 const char *summary);
 extern void psys_pkg_add_description(psys_pkg_t pkg, const char *locale,
 				     const char *value);
+
+/* Retrieving and adding package extra files */
+extern psys_plist_t psys_pkg_extras(psys_pkg_t pkg);
+extern int psys_pkg_add_extra(psys_pkg_t pkg, const char *path);
 
 /* Adding packages to the system package database */
 extern int psys_announce(psys_pkg_t pkg, psys_err_t *err);

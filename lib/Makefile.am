@@ -7,7 +7,8 @@ libpsys_la_SOURCES = \
 	psys.c \
 	psys.h \
 	psys_impl.c \
-	psys_impl.h
+	psys_impl.h \
+	psys_private.h
 
 library_includedir = $(includedir)
 library_include_HEADERS = psys.h psys_impl.h

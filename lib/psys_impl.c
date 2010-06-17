@@ -42,6 +42,7 @@
 #include <sys/stat.h>
 
 #include "psys_impl.h"
+#include "psys_private.h"
 
 #define xisdigit(c) (c >= '0' && c <= '9')
 #define xislower(c) (c >= 'a' || c <= 'z')
@@ -104,15 +105,19 @@ psys_pkg_t psys_pkg_copy(psys_pkg_t pkg)
 			    psys_pkg_arch(pkg));
 
 	if (pkg2) {
-		psys_tlist_t l;
+		psys_tlist_t t;
+		psys_plist_t p;
 
-		for (l = psys_pkg_summary(pkg); l; l = psys_tlist_next(l))
-			psys_pkg_add_summary(pkg2, psys_tlist_locale(l),
-					     psys_tlist_value(l));
+		for (t = psys_pkg_summary(pkg); t; t = psys_tlist_next(t))
+			psys_pkg_add_summary(pkg2, psys_tlist_locale(t),
+					     psys_tlist_value(t));
 
-		for (l = psys_pkg_description(pkg); l; l = psys_tlist_next(l))
-			psys_pkg_add_description(pkg2, psys_tlist_locale(l),
-						 psys_tlist_value(l));
+		for (t = psys_pkg_description(pkg); t; t = psys_tlist_next(t))
+			psys_pkg_add_description(pkg2, psys_tlist_locale(t),
+						 psys_tlist_value(t));
+
+		for (p = psys_pkg_extras(pkg); p; p = psys_plist_next(p))
+			psys_pkg_add_extra(pkg2, psys_plist_path(p));
 	}
 
 	return pkg2;
@@ -181,6 +186,22 @@ static void assert_arch_valid(const char *arch)
 	       !strcmp(arch, "s390x"));
 }
 
+static void assert_plist_valid(psys_plist_t list)
+{
+	if (list) {
+		psys_plist_t l;
+
+		for (l = list; l; l = psys_plist_next(l)) {
+			const char *path;
+
+			path = psys_plist_path(l);
+			assert(path != NULL);
+			assert(psys_path_is_canonical(path));
+			assert(path[strlen(path) - 1] != '/');
+		}
+	}
+}
+
 void psys_pkg_assert_valid(psys_pkg_t pkg)
 {
 	assert_vendor_valid(psys_pkg_vendor(pkg));
@@ -188,7 +209,7 @@ void psys_pkg_assert_valid(psys_pkg_t pkg)
 	assert_version_valid(psys_pkg_version(pkg));
 	assert_lsbversion_valid(psys_pkg_lsbversion(pkg));
 	assert_arch_valid(psys_pkg_arch(pkg));
-
+	assert_plist_valid(psys_pkg_extras(pkg));
 }
 
 /*** Comparing package versions ***********************************************/
@@ -331,7 +352,7 @@ void psys_err_set_notimpl(psys_err_t *err)
 
 /*** Assembling package file lists ********************************************/
 
-static psys_flist_t psys_flist_new(const char *path, const struct stat *st)
+static psys_flist_t flist_new(const char *path, const struct stat *st)
 {
 	psys_flist_t list;
 
@@ -378,7 +399,7 @@ static int file_traversal_fn(const char *path, const struct stat *st,
 		return -1;
 
 	default:
-		l = psys_flist_new(path, st);
+		l = flist_new(path, st);
 		if (!l)
 			return -1;
 
@@ -394,14 +415,59 @@ static int file_traversal_fn(const char *path, const struct stat *st,
 	}
 }
 
+static int add_extra(psys_plist_t extra)
+{
+	const char *path;
+	struct stat st;
+
+	path = psys_plist_path(extra);
+	if (lstat(path, &st)) {
+		/*
+		 * Ignore missing extra files. They _may_ be created, but
+		 * there is no obligation to necessarily do so.
+		 */
+		if (errno != ENOENT) {
+			psys_err_set(_err, PSYS_EINTERNAL,
+				     "Cannot stat package file `%s': %s",
+				     path, strerror(errno));
+			return -1;
+		}
+	} else {
+		psys_flist_t l;
+
+		l = flist_new(path, &st);
+		if (!l) {
+			psys_err_set_nomem(_err);
+			return -1;
+		}
+
+		if (_flist_last) {
+			_flist_last->next = l;
+			_flist_last = l;
+		} else {
+			assert(_flist == NULL);
+			_flist = _flist_last = l;
+		}
+	}
+
+	return 0;		
+}
+
 psys_flist_t psys_pkg_flist(psys_pkg_t pkg, psys_err_t *err)
 {
+	psys_plist_t extras, e;
 	psys_flist_t list;
 
 	assert(pkg != NULL);
 
 	_pkg = pkg;
 	_err = err;
+
+	extras = psys_pkg_extras(pkg);
+	for (e = extras; e; e = psys_plist_next(e)) {
+		if (add_extra(e))
+			return NULL;
+	}
 
 	if (nftw(psys_pkg_dir(pkg), &file_traversal_fn, 4, FTW_PHYS)) {
 		if (err && !(*err))
