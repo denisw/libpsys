@@ -231,6 +231,7 @@ void psys_pkg_assert_valid(psys_pkg_t pkg)
 
 static int psys_vercmp(const char *version1, const char *version2)
 {
+	int v1_len, v2_len;
 	const char *v1s_start, *v2s_start;
 	const char *v1s_end, *v2s_end;
 	int v1s_isdigit, v2s_isdigit;
@@ -241,10 +242,26 @@ static int psys_vercmp(const char *version1, const char *version2)
 	 * one version segment at a time, calling itself to compare the
 	 * next segment if necessary. The initially passed versions are
 	 * assumed to be valid (this is asserted by psys_pkg_vercmp()).
+	 *
+	 * The version comparison algorithm is described in the psysmeta(7)
+	 * man page, which is also availabe online:
+	 *
+	 * http://gitorious.org/libpsys/pages/Psysmeta
 	 */
 
+	v1_len = strlen(version1);
+	v2_len = strlen(version1);
+	if (!v1_len && !v2_len) {
+		if (v1_len)
+			return 1;
+		else if (v2_len)
+			return -1;
+		else
+			return 0;
+	}
+
 	v1s_start = v1s_end = version1;
-	v2s_start = v1s_end =  version2;
+	v2s_start = v2s_end =  version2;
 
 	v1s_isdigit = xisdigit(*v1s_start);
 	v2s_isdigit = xisdigit(*v2s_start);
@@ -253,7 +270,6 @@ static int psys_vercmp(const char *version1, const char *version2)
 
 	if (v1s_isdigit == v2s_isdigit) {
 		size_t v1s_len, v2s_len;
-		int diff;
 
 		if (v1s_isdigit) {
 			while (*v1s_start == '0') {
@@ -274,10 +290,14 @@ static int psys_vercmp(const char *version1, const char *version2)
 			 * We don't need to check with xislower() because
 			 * the alphabetic segment is always the last.
 			 */
-			while (*v1s_end)
+			while (*v1s_end) {
+				assert(xislower(*v1s_end));
 				v1s_end++;
-			while (*v2s_end)
-				v2s_end++;			
+			}
+			while (*v2s_end) {
+				assert(xislower(*v2s_end));
+				v2s_end++;
+			}
 		}
 
 		v1s_len = v1s_end - v1s_start;
