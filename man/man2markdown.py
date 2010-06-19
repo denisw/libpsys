@@ -198,6 +198,18 @@ class Man2Markdown (object):
         """
         self.write("_{0}_".format(" ".join(args)))
 
+    def handle_macro_IB(self, args):
+        """
+        .IB
+        """
+        text = []
+        for i in range(0, len(args)):
+            if i % 2:
+                text.append("**{0}**".format(args[i]))
+            else:
+                text.append("_{0}_".format(args[i]))
+        self.write("".join(text))
+
     def handle_macro_in(self, args):
         """
         .in
@@ -246,6 +258,30 @@ class Man2Markdown (object):
         """
         self.write("\n\n")
         self.__indent = ""
+
+    def handle_macro_RB(self, args):
+        """
+        .RB
+        """
+        text = []
+        for i in range(0, len(args)):
+            if i % 2:
+                text.append("**{0}**".format(args[i]))
+            else:
+                text.append(args[i])
+        self.write("".join(text))
+
+    def handle_macro_RI(self, args):
+        """
+        .RI
+        """
+        text = []
+        for i in range(0, len(args)):
+            if i % 2:
+                text.append("_{0}_".format(args[i]))
+            else:
+                text.append(args[i])
+        self.write("".join(text))
 
     def handle_macro_SH(self, args):
         """
