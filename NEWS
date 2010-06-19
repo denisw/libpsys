@@ -1,3 +1,10 @@
+Version 0.2
+-----------
+- Added Extra Files metadata field (see psysmeta(7) man page)
+- RPM fallback backend now checks if a package's LSB dependency is
+  met (= if an installed package provides "lsb" in the required version)
+- Miscellaneous small fixes
+
 Version 0.1
 -----------
 - Initial version
