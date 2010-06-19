@@ -160,6 +160,105 @@ static rpmts create_transaction_set(psys_err_t *err)
 	return ts;
 }
 
+static unsigned int find_db_record(rpmts ts, unsigned int tag,
+				   const char *value, const char *arch,
+				   Header *header,
+				   psys_err_t *err)
+{
+	rpmdbMatchIterator it;
+	Header h;
+	unsigned int offset;
+
+	it = rpmtsInitIterator(ts, tag, value, 0);
+	h = rpmdbNextIterator(it);
+	if (!h) {
+		/*
+		 * We set the error message to an empty string as it
+		 * depends on which find_by_*() function was called;
+		 * that function will overwrite the error object created
+		 * here with its own
+		 */
+		psys_err_set(err, PSYS_ENOENT, "");
+		rpmdbFreeIterator(it);
+		return -1;
+	}
+
+	offset = UINT_MAX;
+	if (header)
+		*header = NULL;
+
+	for (; h; h = rpmdbNextIterator(it)) {
+		int match;
+
+		if (arch) {
+			char *harch;
+			if (!headerGetEntry(h, RPMTAG_ARCH, NULL,
+					    (void **) &harch, NULL))
+				continue;
+			else
+				match = !strcmp(harch, arch);
+		} else {
+			match = 1;
+		}
+
+		if (match) {
+			offset = (int) rpmdbGetIteratorOffset(it);
+
+			if (header) {
+				*header = headerCopy(h);
+				if (!(*header)) {
+					psys_err_set_nomem(err);
+					rpmdbFreeIterator(it);
+					return UINT_MAX;
+				}
+			}
+
+			break;
+		}
+	}
+
+	if (offset == UINT_MAX) {
+		psys_err_set(err, PSYS_EARCH,
+			     "Installed package `%s' does not have "
+			     "required architecture `%s'",
+			     value, arch);
+	}
+
+	rpmdbFreeIterator(it);
+	return offset;
+}
+
+static int find_by_name(rpmts ts, const char *name, const char *arch,
+			Header *header, psys_err_t *err)
+{
+	unsigned int offset;
+
+	offset = find_db_record(ts, RPMTAG_NAME, name, arch, header, err);
+	if (offset == UINT_MAX && psys_err_code(*err) == PSYS_ENOENT) {
+		psys_err_free(*err);
+		psys_err_set(err, PSYS_ENOENT,
+			     "No package named `%s' is installed",
+			     name);
+	}
+	return offset;
+}
+
+static int find_by_provide_name(rpmts ts, const char *name, const char *arch,
+				Header *header, psys_err_t *err)
+{
+	unsigned int offset;
+
+	offset = find_db_record(ts, RPMTAG_PROVIDENAME, name, arch, header,
+			        err);
+	if (offset == UINT_MAX && psys_err_code(*err) == PSYS_ENOENT) {
+		psys_err_free(*err);
+		psys_err_set(err, PSYS_ENOENT,
+			     "No installed package provides `%s'",
+			     name);
+	}
+	return offset;
+}
+
 static int ensure_not_installed(rpmts ts, const char *name, psys_err_t *err)
 {
 	if (rpmdbCountPackages(rpmtsGetRdb(ts), name) > 0) {
@@ -169,6 +268,58 @@ static int ensure_not_installed(rpmts ts, const char *name, psys_err_t *err)
 			     name);
 		return -1;
 	}
+	return 0;
+}
+
+static int ensure_dependencies_installed(rpmts ts, psys_pkg_t pkg,
+					 psys_err_t *err)
+{
+	const char *rpmarch;
+	Header h;
+	char *version;
+
+	rpmarch = rpm_arch(psys_pkg_arch(pkg), err);
+	if (!rpmarch)
+		return -1;
+
+	/*
+	 * If the package is architecture-independent, we don't care which
+	 * architecture the "lsb" package has
+	 */
+	if (!strcmp(rpmarch, "noarch"))
+		rpmarch = NULL;
+
+	if (find_by_provide_name(ts, "lsb", rpmarch, &h, err) == UINT_MAX) {
+		if (psys_err_code(*err) == PSYS_ENOENT) {
+			psys_err_t tmp;
+			tmp = *err;
+			psys_err_set(err, PSYS_ELSBVER,
+				     "The system does not seem to comply to "
+				     "the Linux Standard Base (LSB) standard: "
+				     "%s",
+				     psys_err_msg(tmp));
+			psys_err_free(tmp);
+		}
+		return -1;
+	}
+
+	if (!headerGetEntry(h, RPMTAG_VERSION, NULL, (void **) &version,
+			    NULL)) {
+		psys_err_set(err, PSYS_EINTERNAL,
+			     "Error in headerGetEntry() (RPMTAG_VERSION)");
+		return -1;
+	}
+
+	if (psys_pkg_lsbvercmp(pkg, version) < 0) {
+		psys_err_set(err, PSYS_ELSBVER,
+			     "The system does not comply to a new-enough "
+			     "version of the Linux Standard Base (LSB) "
+			     "standard (version %s of package `lsb' is "
+			     "installed, while %s is required)",
+			     version, psys_pkg_lsbversion(pkg));
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -211,67 +362,24 @@ static void add_i18n_entry(Header header, int tag, psys_tlist_t l)
 	}
 }
 
-static unsigned int find_db_record(rpmts ts, const char *name,
-				   const char *arch, Header *header,
-				   psys_err_t *err)
-{
-	rpmdbMatchIterator it;
-	Header h;
-	unsigned int offset;
+static void add_dependency_entries(Header header, psys_pkg_t pkg) {
+	const char *val_str;
+	int val_i32;
 
-	it = rpmtsInitIterator(ts, RPMTAG_NAME, name, 0);
-	h = rpmdbNextIterator(it);
-	if (!h) {
-		psys_err_set(err, PSYS_ENOENT,
-			     "No package named `%s' is installed",
-			     name);
-		rpmdbFreeIterator(it);
-		return -1;
-	}
+	/* REQUIRENAME */
+	val_str = "lsb";
+	headerAddEntry(header, RPMTAG_REQUIRENAME, RPM_STRING_ARRAY_TYPE,
+		       &val_str, 1);
 
-	offset = -1;
-	if (header)
-		*header = NULL;
+        /* REQUIREFLAGS */
+	val_i32 = RPMSENSE_EQUAL | RPMSENSE_GREATER;
+	headerAddEntry(header, RPMTAG_REQUIREFLAGS, RPM_INT32_TYPE,
+		       &val_i32, 1);
 
-	for (; h; h = rpmdbNextIterator(it)) {
-		int match;
-
-		if (arch) {
-			char *harch;
-			if (!headerGetEntry(h, RPMTAG_ARCH, NULL,
-					    (void **) &harch, NULL))
-				continue;
-			else
-				match = !strcmp(harch, arch);
-		} else {
-			match = 1;
-		}
-
-		if (match) {
-			offset = rpmdbGetIteratorOffset(it);
-
-			if (header) {
-				*header = headerCopy(h);
-				if (!(*header)) {
-					psys_err_set_nomem(err);
-					rpmdbFreeIterator(it);
-					return -1;
-				}
-			}
-
-			break;
-		}
-	}
-
-	if (offset == -1) {
-		psys_err_set(err, PSYS_EARCH,
-			     "Installed package `%s' does not have "
-			     "architecture `%s'",
-			     name, arch);
-	}
-
-	rpmdbFreeIterator(it);
-	return offset;
+	/* REQUIREVER */
+	val_str = psys_pkg_lsbversion(pkg);
+	headerAddEntry(header, RPMTAG_REQUIREVERSION, RPM_STRING_ARRAY_TYPE,
+		       &val_str, 1);
 }
 
 static int ensure_version_newer(psys_pkg_t pkg, Header installed,
@@ -737,6 +845,11 @@ int rpm_psys_announce(psys_pkg_t pkg, psys_err_t *err)
 		goto out;
 	}
 
+	if (ensure_dependencies_installed(ts, pkg, err)) {
+		ret = -1;
+		goto out;
+	}
+
 	if (ensure_no_conflicting_extras(pkg, err)) {
 		ret = -1;
 		goto out;
@@ -761,10 +874,7 @@ int do_register(rpmts ts, psys_pkg_t pkg, psys_err_t *err)
 	const char *rpmarch;
 	Header header = NULL;
 	psys_flist_t flist = NULL, f;
-	/* For INT32 header entry values */
 	int_32 val_i32;
-	/* For STRING_ARARY header entry values */
-	const char *val_str;
 
 	rpmname = rpm_name(psys_pkg_vendor(pkg), psys_pkg_name(pkg));
 	if (!rpmname) {
@@ -780,6 +890,11 @@ int do_register(rpmts ts, psys_pkg_t pkg, psys_err_t *err)
 	}
 
 	if (ensure_not_installed(ts, rpmname, err)) {
+		ret = -1;
+		goto out;
+	}
+
+	if (ensure_dependencies_installed(ts, pkg, err)) {
 		ret = -1;
 		goto out;
 	}
@@ -804,21 +919,6 @@ int do_register(rpmts ts, psys_pkg_t pkg, psys_err_t *err)
 	headerAddEntry(header, RPMTAG_OS, RPM_STRING_TYPE, "linux", 1);
 	headerAddEntry(header, RPMTAG_ARCH, RPM_STRING_TYPE, rpmarch, 1);
 
-	/* REQUIRENAME */
-	val_str = "lsb";
-	headerAddEntry(header, RPMTAG_REQUIRENAME, RPM_STRING_ARRAY_TYPE,
-		       &val_str, 1);
-
-        /* REQUIREFLAGS */
-	val_i32 = RPMSENSE_EQUAL | RPMSENSE_GREATER;
-	headerAddEntry(header, RPMTAG_REQUIREFLAGS, RPM_INT32_TYPE,
-		       &val_i32, 1);
-
-	/* REQUIREVER */
-	val_str = psys_pkg_lsbversion(pkg);
-	headerAddEntry(header, RPMTAG_REQUIREVERSION, RPM_STRING_ARRAY_TYPE,
-		       &val_str, 1);
-
 	/* VENDOR */
 	headerAddEntry(header, RPMTAG_VENDOR, RPM_STRING_TYPE,
 		       psys_pkg_vendor(pkg), 1);
@@ -831,6 +931,9 @@ int do_register(rpmts ts, psys_pkg_t pkg, psys_err_t *err)
 
 	/* GROUP */
 	headerAddEntry(header, RPMTAG_GROUP, RPM_STRING_TYPE, "", 1);
+
+	/* Dependencies */
+	add_dependency_entries(header, pkg);
 
 	flist = psys_pkg_flist(pkg, err);
 	if (!flist) {
@@ -934,13 +1037,18 @@ int rpm_psys_announce_update(psys_pkg_t pkg, psys_err_t *err)
 		goto out;
 	}
 
-	recoffset = find_db_record(ts, rpmname, rpmarch, &header, err);
-	if (recoffset == -1) {
+	recoffset = find_by_name(ts, rpmname, rpmarch, &header, err);
+	if (recoffset == UINT_MAX) {
 		ret = -1;
 		goto out;
 	}
 
 	if (ensure_version_newer(pkg, header, err)) {
+		ret = -1;
+		goto out;
+	}
+
+	if (ensure_dependencies_installed(ts, pkg, err)) {
 		ret = -1;
 		goto out;
 	}
@@ -1005,13 +1113,18 @@ int rpm_psys_register_update(psys_pkg_t pkg, psys_err_t *err)
 		goto out;
 	}
 
-	recoffset = find_db_record(ts, rpmname, rpmarch, &header, err);
-	if (recoffset == -1) {
+	recoffset = find_by_name(ts, rpmname, rpmarch, &header, err);
+	if (recoffset == UINT_MAX) {
 		ret = -1;
 		goto out;
 	}
 
 	if (ensure_version_newer(pkg, header, err)) {
+		ret = -1;
+		goto out;
+	}
+
+	if (ensure_dependencies_installed(ts, pkg, err)) {
 		ret = -1;
 		goto out;
 	}
@@ -1054,10 +1167,10 @@ int rpm_psys_unannounce(const char *vendor, const char *name,
 		return -1;
 	}
 
-	recoffset = find_db_record(ts, rpmname, NULL, NULL, err);
+	recoffset = find_by_name(ts, rpmname, NULL, NULL, err);
 	free(rpmname);
 	rpmtsFree(ts);
-	return (recoffset == -1) ? -1 : 0;
+	return (recoffset == UINT_MAX) ? -1 : 0;
 }
 
 /*** psys_unregister() ***************************************************/
@@ -1082,8 +1195,8 @@ int rpm_psys_unregister(const char *vendor, const char *name,
 	while (1) {
 		unsigned int recoffset;
 
-		recoffset = find_db_record(ts, rpmname, NULL, NULL, err);
-		if (recoffset == -1) {
+		recoffset = find_by_name(ts, rpmname, NULL, NULL, err);
+		if (recoffset == UINT_MAX) {
 			free(rpmname);
 			rpmtsFree(ts);
 			return 0;

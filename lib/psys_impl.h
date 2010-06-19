@@ -47,6 +47,7 @@ extern void psys_pkg_assert_valid(psys_pkg_t pkg);
 
 /* Comparing package versions */
 extern int psys_pkg_vercmp(psys_pkg_t, const char *version);
+extern int psys_pkg_lsbvercmp(psys_pkg_t, const char *lsbversion);
 
 /* Setting errors */
 extern void psys_err_set(psys_err_t *err, int code, const char *format, ...);

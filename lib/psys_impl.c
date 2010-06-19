@@ -342,6 +342,22 @@ int psys_pkg_vercmp(psys_pkg_t pkg, const char *version)
 		return psys_vercmp(psys_pkg_version(pkg), version);
 }
 
+int psys_pkg_lsbvercmp(psys_pkg_t pkg, const char *lsbversion)
+{
+	assert(pkg != NULL);
+	assert(lsbversion != NULL);
+	assert_lsbversion_valid(psys_pkg_lsbversion(pkg));
+
+	/*
+	 * Treat invalid passed versions as newer, just as in
+	 * psys_pkg_vercmp().
+	 */
+	if (!version_is_valid(lsbversion))
+		return -1;
+	else
+		return psys_vercmp(lsbversion, psys_pkg_lsbversion(pkg));
+}
+
 /*** Setting errors ***********************************************************/
 
 void psys_err_set(psys_err_t *err, int code, const char *format, ...)
