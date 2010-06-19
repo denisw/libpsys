@@ -7,10 +7,12 @@ man_MANS = \
 	psys_err_code.3 \
 	psys_err_msg.3 \
 	psys_pkg_add_description.3 \
+	psys_pkg_add_extra.3 \
 	psys_pkg_add_summary.3 \
 	psys_pkg_arch.3 \
 	psys_pkg_description.3 \
 	psys_pkg_dir.3 \
+	psys_pkg_extras.3 \
 	psys_pkg_free.3 \
 	psys_pkg_lsbversion.3 \
 	psys_pkg_name.3 \
