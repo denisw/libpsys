@@ -46,14 +46,17 @@ installed into /opt as demanded by the Filesystem Hierarchy Standard (FHS)
 specified by the LSB; any additional dependencies must be contained within
 the package itself.
 
-The psys library interface is meant to be a proposal for a future version
-of the LSB standard.
+The psys library interface is strongly influenced by the "Berlin Packaging
+API" concept [3] discussed at the 2006 LSB face-to-face meeting in Berlin.
+The library interface is meant as a proposal for a future version of the
+LSB standard.
 
 [1] http://www.linuxbase.org
 [2] http://www.pathname.com/fhs/pub/fhs-2.3.html
+[3] http://www.linuxfoundation.org/en/Berlin_Packaging_API
 
-2. Design
-   ------
+2. Implementation
+   --------------
 A complete psys implementation is divided into two parts, a "frontend" and
 a "backend".
 
