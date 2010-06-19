@@ -54,17 +54,22 @@ of the LSB standard.
 
 2. Design
    ------
-The psys library implementation is divided into two parts. The first part,
-the "frontend", implements the distribution-independent functions of the
-psys library, e.g. for the creation of the psys data structures. This part
-is fully implemented by the psys library sourcecode itself. The second part,
-the "backend", is specific to a package manager or Linux distribution and
-implements the actual core functionality of the psys library interface. It
-can either be implemented by the package manager / distribution directly
-(see HACKING) or, if it isn't, by a "fallback backend" built into the psys
-library itself. Currently, the psys library comes with a fallback backend
-for RPM-based distributions; others may be added in the future. See HACKING
-for general information about writing a psys library backend.
+A complete psys implementation is divided into two parts, a "frontend" and
+a "backend".
+
+* The "frontend" implements the distribution-independent functions of the
+  psys library, e.g. for the creation of the psys data structures. This
+  part is fully implemented by the psys library sourcecode itself.
+
+* The "backend" is specific to a package manager or Linux distribution and
+  implements the actual core functionality of the psys library interface
+  (that is, processing notifications and package registration requests
+  from installation programs). It can either be implemented by the package
+  manager / distribution directly or, otherwise, by a "fallback backend"
+  built into the core psys library itself. Currently, the psys library
+  comes with a fallback backend for RPM-based distributions; others may be
+  added in the future. See HACKING for general information about writing a
+  psys library backend.
 
 The availability of fallback backends means that the psys library can, in
 principal, be used on today's distros by installation programs which ship
@@ -72,7 +77,7 @@ the library theirselves or statically link to it. As the psys library only
 takes care of the commmunication with the package manager, but leaves the
 actual installation / update / uninstallation to the installation program,
 adopting an existing installer to use the psys interface should require
-relatively little modifications to the installer's code. 
+relatively little code modifications. 
 
 3. Installation
    ------------
@@ -110,7 +115,7 @@ The psys library interface is documented in man page format; see the
 psys(7) man page distributed with this library to get started.
 Alternatively, all pages are available online at:
 
-http://gitorious.org/libpsys/pages/Home
+http://gitorious.org/libpsys/pages/ManPages
 
 Also have a look at the examples in the examples/ sub-directory to see the
 psys library in action. (See "3. Installation").
