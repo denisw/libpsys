@@ -259,6 +259,22 @@ static int find_by_provide_name(rpmts ts, const char *name, const char *arch,
 	return offset;
 }
 
+static char *canonicalize_path(const char *path, psys_err_t *err)
+{
+	char *rpath;
+
+	rpath = realpath(path, NULL);
+	if (!rpath) {
+		psys_err_set(err, PSYS_EINTERNAL,
+			     "Cannot canonicalize path `%s': %s",
+			     path, strerror(errno));
+		return NULL;
+	}
+	return rpath;
+}
+
+/*** Sanity checks ************************************************************/
+
 static int ensure_not_installed(rpmts ts, const char *name, psys_err_t *err)
 {
 	if (rpmdbCountPackages(rpmtsGetRdb(ts), name) > 0) {
@@ -352,77 +368,6 @@ static int ensure_no_conflicting_extras(psys_pkg_t pkg, psys_err_t *err) {
 	}
 
 	return 0;
-}
-
-static void add_i18n_entry(Header header, int tag, psys_tlist_t l)
-{
-	for (; l; l = psys_tlist_next(l)) {
-		headerAddI18NString(header, tag, psys_tlist_value(l),
-				    psys_tlist_locale(l));
-	}
-}
-
-static void add_dependency_entries(Header header, psys_pkg_t pkg) {
-	const char *val_str;
-	int val_i32;
-
-	/* REQUIRENAME */
-	val_str = "lsb";
-	headerAddEntry(header, RPMTAG_REQUIRENAME, RPM_STRING_ARRAY_TYPE,
-		       &val_str, 1);
-
-        /* REQUIREFLAGS */
-	val_i32 = RPMSENSE_EQUAL | RPMSENSE_GREATER;
-	headerAddEntry(header, RPMTAG_REQUIREFLAGS, RPM_INT32_TYPE,
-		       &val_i32, 1);
-
-	/* REQUIREVER */
-	val_str = psys_pkg_lsbversion(pkg);
-	headerAddEntry(header, RPMTAG_REQUIREVERSION, RPM_STRING_ARRAY_TYPE,
-		       &val_str, 1);
-}
-
-static int ensure_version_newer(psys_pkg_t pkg, Header installed,
-				psys_err_t *err)
-{
-	const char *version;
-	int diff;
-
-	if (!headerGetEntry(installed, RPMTAG_VERSION, NULL,
-			    (void **) &version, NULL)) {
-		psys_err_set(err, PSYS_EINTERNAL,
-			     "Error in headerGetEntry() (RPMTAG_VERSION)");
-		return -1;
-	}
-
-	diff = psys_pkg_vercmp(pkg, version);
-	if (diff < 0) {
-		psys_err_set(err, PSYS_EVER,
-			     "Installed package is newer than version %s (%s)",
-			     psys_pkg_version(pkg), version);
-		return -1;
-	} else if (diff == 0) {
-		psys_err_set(err, PSYS_EVER,
-			     "Package is already at version %s",
-			     version);
-		return -1;
-	} else {
-		return 0;
-	}
-}
-
-static char *canonicalize_path(const char *path, psys_err_t *err)
-{
-	char *rpath;
-
-	rpath = realpath(path, NULL);
-	if (!rpath) {
-		psys_err_set(err, PSYS_EINTERNAL,
-			     "Cannot canonicalize path `%s': %s",
-			     path, strerror(errno));
-		return NULL;
-	}
-	return rpath;
 }
 
 static int ensure_no_new_conflicting_extras(psys_pkg_t pkg, Header installed,
@@ -524,6 +469,65 @@ out:
 	if (basenames)
 		free(basenames);
 	return ret;
+}
+
+static int ensure_version_newer(psys_pkg_t pkg, Header installed,
+				psys_err_t *err)
+{
+	const char *version;
+	int diff;
+
+	if (!headerGetEntry(installed, RPMTAG_VERSION, NULL,
+			    (void **) &version, NULL)) {
+		psys_err_set(err, PSYS_EINTERNAL,
+			     "Error in headerGetEntry() (RPMTAG_VERSION)");
+		return -1;
+	}
+
+	diff = psys_pkg_vercmp(pkg, version);
+	if (diff < 0) {
+		psys_err_set(err, PSYS_EVER,
+			     "Installed package is newer than version %s (%s)",
+			     psys_pkg_version(pkg), version);
+		return -1;
+	} else if (diff == 0) {
+		psys_err_set(err, PSYS_EVER,
+			     "Package is already at version %s",
+			     version);
+		return -1;
+	} else {
+		return 0;
+	}
+}
+
+/*** Adding package metadata **************************************************/
+
+static void add_i18n_entry(Header header, int tag, psys_tlist_t l)
+{
+	for (; l; l = psys_tlist_next(l)) {
+		headerAddI18NString(header, tag, psys_tlist_value(l),
+				    psys_tlist_locale(l));
+	}
+}
+
+static void add_dependency_entries(Header header, psys_pkg_t pkg) {
+	const char *val_str;
+	int val_i32;
+
+	/* REQUIRENAME */
+	val_str = "lsb";
+	headerAddEntry(header, RPMTAG_REQUIRENAME, RPM_STRING_ARRAY_TYPE,
+		       &val_str, 1);
+
+        /* REQUIREFLAGS */
+	val_i32 = RPMSENSE_EQUAL | RPMSENSE_GREATER;
+	headerAddEntry(header, RPMTAG_REQUIREFLAGS, RPM_INT32_TYPE,
+		       &val_i32, 1);
+
+	/* REQUIREVER */
+	val_str = psys_pkg_lsbversion(pkg);
+	headerAddEntry(header, RPMTAG_REQUIREVERSION, RPM_STRING_ARRAY_TYPE,
+		       &val_str, 1);
 }
 
 /*** Adding file metadata *****************************************************/
