@@ -65,4 +65,7 @@ extern psys_flist_t psys_flist_next(psys_flist_t file);
 /* Freeing file lists */
 extern void psys_flist_free(psys_flist_t list);
 
+/* Calculating MD5 sums */
+char *psys_flist_md5sum(psys_flist_t file, psys_err_t *err);
+
 #endif

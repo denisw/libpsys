@@ -574,3 +574,56 @@ void psys_flist_free(psys_flist_t list)
 		l = next;
 	}
 }
+
+/*** Calculating MD5 sums *****************************************************/
+
+char *psys_flist_md5sum(psys_flist_t file, psys_err_t *err)
+{
+	char *cmd, *md5;
+	FILE *pipe;
+
+	if (S_ISREG(psys_flist_stat(file)->st_mode)) {
+		if (asprintf(&cmd, "md5sum %s", psys_flist_path(file)) < 0)
+			return NULL;
+
+		pipe = popen(cmd, "r");
+		free(cmd);
+		if (!pipe) {
+			psys_err_set(err, PSYS_EINTERNAL,
+				     "Failed to run md5sum: %s",
+				     strerror(errno));
+			return NULL;
+		}
+
+		md5 = malloc(33);
+		if (!md5) {
+			fclose(pipe);
+			psys_err_set_nomem(err);
+			return NULL;
+		}
+
+		if (!fgets(md5, 33, pipe)) {
+			char *reason;
+
+			if (feof(pipe))
+				reason = "Unexpected end of stream";
+			else
+				reason = strerror(errno);
+
+			psys_err_set(err, PSYS_EINTERNAL,
+				     "Failed to read checksum for file `%s' "
+				     "from md5sum: %s",
+				     psys_flist_path(file), reason);
+
+			fclose(pipe);
+			free(md5);
+			return NULL;
+		}
+
+		fclose(pipe);
+	} else {
+		md5 = "";
+	}
+
+	return md5;
+}

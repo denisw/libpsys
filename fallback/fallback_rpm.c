@@ -705,59 +705,15 @@ static int add_linkto_entry(Header header, psys_flist_t file,
 static int add_md5_entry(Header header, psys_flist_t file,
 			 psys_err_t *err)
 {
-	char *cmd, *md5;
-	FILE *pipe;
+	char *md5;
 
-	if (S_ISREG(psys_flist_stat(file)->st_mode)) {
-		if (asprintf(&cmd, "md5sum %s", psys_flist_path(file)) < 0)
-			return -1;
-
-		pipe = popen(cmd, "r");
-		free(cmd);
-		if (!pipe) {
-			psys_err_set(err, PSYS_EINTERNAL,
-				     "Failed to run md5sum: %s",
-				     strerror(errno));
-			return -1;
-		}
-
-		md5 = malloc(33);
-		if (!md5) {
-			fclose(pipe);
-			psys_err_set_nomem(err);
-			return -1;
-		}
-
-		if (!fgets(md5, 33, pipe)) {
-			char *reason;
-
-			if (feof(pipe))
-				reason = "Unexpected end of stream";
-			else
-				reason = strerror(errno);
-
-			psys_err_set(err, PSYS_EINTERNAL,
-				     "Failed to read file checksum for `%s' "
-				     "from md5sum: %s",
-				     psys_flist_path(file), reason);
-
-			fclose(pipe);
-			free(md5);
-			return -1;
-		}
-
-		fclose(pipe);
-	} else {
-		md5 = "";
-	}
+	md5 = psys_flist_md5sum(file, err);
+	if (!md5)
+		return -1;
 
 	/* FILEMD5S */
-	headerAddOrAppendEntry(header, RPMTAG_FILEMD5S, RPM_STRING_ARRAY_TYPE,
-			       &md5, 1);
-
-	if (strlen(md5) > 0)
-		free(md5);
-
+	headerAddOrAppendEntry(header, RPMTAG_FILEMD5S,
+			       RPM_STRING_ARRAY_TYPE, &md5, 1);
 	return 0;
 }
 
