@@ -126,18 +126,25 @@ their usage.
 Last but not least, some general advice:
 
 - At the beginning of _psys_announce(), _psys_announce_update(),
-_psys_register() and _psys_register_update() (or the corresponding
-fallback backend functions), ALWAYS copy the received package object
-with psys_pkg_copy() and validate it with psys_pkg_validate() before
-doing anything with it. This saves you from malicious input and
-concurrent modifications of the package object from other possibly
-running threads.
+  _psys_register() and _psys_register_update() (or the corresponding
+  fallback backend functions), ALWAYS copy the received package object
+  with psys_pkg_copy() and validate it with psys_pkg_validate() before
+  doing anything with it. This saves you from malicious input and
+  concurrent modifications of the package object from other possibly
+  running threads. The code for doing this could look like this:
+
+    pkg = psys_pkg_copy(pkg);
+    if (!pkg) {
+        psys_err_set_nomem(err);
+        return -1;
+    }
+    psys_pkg_assert_valid(pkg);
 
 - When acquiring a package database lock in _psys_announce(), NEVER
-keep the lock after return, assuming _psys_register() can release it
-later. This opens up all kinds of possibilities for Denial-of-Service
-attacks. (What if a buggy or malicious installation program announces
-a package but never registers it?) Same for _psys_announce_update() /
-_psys_register_update().
+  keep the lock after return, assuming _psys_register() can release it
+  later. This opens up all kinds of possibilities for Denial-of-Service
+  attacks. (What if a buggy or malicious installation program announces
+  a package but never registers it?) Same for _psys_announce_update() /
+  _psys_register_update().
 
 Happy hacking!
