@@ -85,7 +85,7 @@ char *psys_lsb_distributor_id(void)
 
 		id = NULL;
 		nbytes = getline(&id, NULL, pipe);
-		fclose(pipe);
+		pclose(pipe);
 
 		if (nbytes != -1)
 			return id;
@@ -615,7 +615,7 @@ char *psys_flist_md5sum(psys_flist_t file, psys_err_t *err)
 				     "from md5sum: %s",
 				     psys_flist_path(file), reason);
 
-			fclose(pipe);
+			pclose(pipe);
 			free(md5);
 			return NULL;
 		}
