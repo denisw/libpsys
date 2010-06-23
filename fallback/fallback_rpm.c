@@ -929,6 +929,8 @@ int do_register(rpmts ts, psys_pkg_t pkg, psys_err_t *err)
 
 	ret = 0;
 out:
+	if (flist)
+		psys_flist_free(flist);
 	if (header)
 		headerFree(header);
 	if (rpmname)
