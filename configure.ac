@@ -1,4 +1,4 @@
-AC_INIT([libpsys], [0.2],
+AC_INIT([libpsys], [0.2.1],
 	[http://groups.google.com/group/libpsys],
 	[libpsys],
 	[http://gitorious.org/libpsys])

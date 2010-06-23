@@ -1,3 +1,10 @@
+Version 0.2.1
+-------------
+- A new fallback backend for DPKG (Debian and derivatives)
+- New configuration options (--enable-fallback-dpkg, --enable-fallback-rpm,
+  --enable-fallback-all; --enable-fallback was dropped)
+- Miscellaneous small fixes and cleanups
+
 Version 0.2
 -----------
 - Added Extra Files metadata field (see psysmeta(7) man page)
