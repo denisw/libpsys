@@ -28,6 +28,12 @@
 
 #include "psys.h"
 
+/* Concrete structure of psys_err_t */
+struct _psys_err {
+	int code;
+	char *msg;
+};
+
 /*** Validating paths *********************************************************/
 
 static int psys_path_is_canonical(const char *path)

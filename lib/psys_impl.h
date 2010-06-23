@@ -32,12 +32,6 @@
 /* File list type */
 typedef struct _psys_flist *psys_flist_t;
 
-/* Internal structure of psys_err_t */
-struct _psys_err {
-	int code;
-	char *msg;
-};
-
 /* Looking up the system's LSB distributor ID */
 extern char *psys_lsb_distributor_id(void);
 
