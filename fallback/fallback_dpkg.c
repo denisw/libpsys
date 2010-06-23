@@ -48,6 +48,7 @@
 
 static const char *distros[] = {
 	"Debian",
+	"LinuxMint",
 	"Ubuntu",
 	NULL
 };

@@ -48,11 +48,14 @@
 #include <rpm/header.h>
 
 #include <psys_impl.h>
+#include "fallback_private.h"
 
 /* Known RPM-based distros (lsb_release distributor IDs) */
 /* TODO: Fill this list */
 static const char *distros[] = {
 	"Fedora",
+	"MandrivaLinux",
+	"SUSE LINUX",
 	NULL
 };
 
@@ -60,26 +63,7 @@ static const char *distros[] = {
 
 int rpm_fallback_match(void)
 {
-	char *dist;
-
-	dist = psys_lsb_distributor_id();
-	if (!dist) {
-		return 0;
-	} else {
-		int matching;
-		const char **d;
-
-		matching = 0;
-		for (d = distros; *d; d++) {
-			if (!strcmp(*d, dist)) {
-				matching = 1;
-				break;
-			}
-		}
-
-		free(dist);
-		return matching;
-	}
+	return fallback_match_by_distro(distros);
 }
 
 int rpm_fallback_match_fuzzy(void)
