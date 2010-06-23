@@ -14,6 +14,10 @@ static int install(void)
 {
 	FILE *f;
 
+	if (mkdir("/opt", 0755) && errno != EEXIST) {
+		perror("mkdir()");
+		return -1;
+	}
 	if (mkdir("/opt/example.com", 0755) && errno != EEXIST) {
 		perror("mkdir()");
 		return -1;
