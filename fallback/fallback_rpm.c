@@ -827,7 +827,7 @@ out:
 
 /*** psys_register() **********************************************************/
 
-int do_register(rpmts ts, psys_pkg_t pkg, psys_err_t *err)
+static int do_register(rpmts ts, psys_pkg_t pkg, psys_err_t *err)
 {
 	int ret;
 	char *rpmname = NULL;
