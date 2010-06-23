@@ -1,6 +1,6 @@
 SUBDIRS = lib man
 
-if FALLBACK_ENABLED
+if ENABLE_FALLBACK
 SUBDIRS += fallback
 endif
 

@@ -70,9 +70,9 @@ a "backend".
   from installation programs). It can either be implemented by the package
   manager / distribution directly or, otherwise, by a "fallback backend"
   built into the core psys library itself. Currently, the psys library
-  comes with a fallback backend for RPM-based distributions; others may be
-  added in the future. See HACKING for general information about writing a
-  psys library backend.
+  comes with a fallback backend for RPM- and Debian-based distributions;
+  others may be added in the future. See HACKING for general information
+  about writing a psys library backend.
 
 The availability of fallback backends means that the psys library can, in
 principal, be used on today's distros by installation programs which ship
@@ -84,25 +84,44 @@ relatively little code modifications.
 
 3. Installation
    ------------
-The psys library can be built as any autotools-powered project with
+The psys library can be built like any autotools-powered project with
 
+    ./configure [options]
+    make
+    make install  # as super user (root, sudo)
+
+In addition to the standard configure options, the following can be
+specified:
+
+    --enable-fallback-rpm	Build RPM fallback backend (requires rpmlib)
+    --enable-fallback-dpkg      Build DPKG fallback backend (requires libdpkg)
+    --enable-fallback-all       Build all fallback backends
+
+Note that in order to build the DPKG fallback backend, you need a version
+of libdpkg.a which is compiled to position-independent code with -fPIC;
+otherwise, linking will fail. As the libdpkg-dev package in the Debian
+testing/unstable repositories is currently not built with -fPIC, you need
+to build it yourself:
+
+    git clone git://git.debian.org/git/dpkg/dpkg.git
+    cd dpkg
+    ## If you have a gettext version < 0.18 (e.g. Ubuntu 10.04): ##
+    git checkout 1.15.7
+    ## Add -fPIC to compiler flags ##
+    echo "AM_CFLAGS += -fPIC" | cat lib/dpkg/Makefile.am - > Makefile.am.tmp
+    cp Makefile.am.tmp lib/dpkg/Makefile.am
+    rm Makefile.am.tmp
+    ## Configure and install ##
+    autoreconf -i
     ./configure
+    cd lib/dpkg
     make
-    make install
+    make install  # as super user
 
-(the last command as root or sudo.) To build with the fallback backend,
-configure with --enable-fallbacks:
-
-    ./configure --enable-fallback
-    make
-    make install
-
-Note that you need rpmlib installed for this.
-
-After having installed the psys library, you can test it by building and
-running the examples in the examples/ sub-directory (you need to have a
-psys backend, such as the fallback backend, and a package manager supported
-by that backend installed for this):
+Your dpkg installation will not be affected by this.
+ 
+After having installed the psys library and a backend, you can test it by
+building and running the examples in the examples/ sub-directory:
 
     cd examples/helloworld
     make
@@ -110,7 +129,7 @@ by that backend installed for this):
     ./updater
     ./uninstaller
 
-(You will most probably have to run the example programs as root.)
+(You will most probably have to run the example programs as super user.)
 
 4. Documentation
    -------------
