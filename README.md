@@ -78,7 +78,7 @@ manager, but leaves the actual installation / update / uninstallation
 to the installation program, adopting an existing installer to use the
 psys interface should require relatively little code modifications.
 
-# Installation
+## Installation
 
 The psys library can be built like any autotools-powered project with
 
