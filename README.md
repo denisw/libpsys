@@ -24,6 +24,7 @@
  Markdown format in the [wiki](https://github.com/denisw/libpsys/wiki).*
 
 1. [Introduction](#introduction)
+2. [Example](#example)
 2. [Design](#design)
 3. [Installation](#installation)
 4. [Documentation](#documentation)
@@ -146,7 +147,7 @@ registers it as a packate in the distribution's package system.
         return EXIT_SUCCESS;
     }
 
-## Implementation
+## Design
 
 Psys is divided into two parts, a "frontend" and a "backend".
 
