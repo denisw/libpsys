@@ -18,6 +18,11 @@
  [discussions on lsb-discuss](https://lists.linux-foundation.org/pipermail/packaging/2010-June/001235.html)
  might also be of interest.*
 
+*Below is the original README, converted to Markdown and augmented
+ with an example program that was originally only in the
+ documentation. The man pages in the `doc/` directory can be found in
+ Markdown format in the [wiki](https://github.com/denisw/libpsys/wiki).*
+
 1. [Introduction](#introduction)
 2. [Design](#design)
 3. [Installation](#installation)
@@ -50,6 +55,96 @@ http://www.linuxfoundation.org/en/Berlin_Packaging_API) concept [3]
 discussed at the 2006 LSB face-to-face meeting in Berlin.  The library
 interface is meant as a proposal for a future version of the LSB
 standard.
+
+## Example
+
+The following program installs a simple hello world program and
+registers it as a packate in the distribution's package system.
+
+    #include <errno.h>
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <string.h>
+    #include <sys/stat.h>
+
+    #include <psys.h>
+
+    #define HELLOWORLD_SCRIPT \\
+        "#!/bin/sh \\n" \\
+        "echo \\"Hello World!\\""
+
+    static void install_dir(const char *name)
+    {
+        if (mkdir(name, 0755) && errno != EEXIST) {
+            perror("mkdir()");
+            abort();
+        }
+    }
+
+    static void install(void)
+    {
+        FILE *f;
+
+        install_dir("/opt/example.com");
+        install_dir("/opt/example.com/helloworld");
+        install_dir("/opt/example.com/helloworld/bin");
+
+        f = fopen("/opt/example.com/helloworld/bin/helloworld", "w");
+        if (!f) {
+            perror("fopen()");
+            abort();
+        }
+        if (fputs(HELLOWORLD_SCRIPT, f) == EOF) {
+            perror("fputs()");
+            abort();
+        }
+        fclose(f);
+
+        if (chmod("/opt/example.com/helloworld/bin/helloworld", 0755)) {
+            perror("chmod()");
+            abort();
+        }
+    }
+
+    int main(int argc, char **argv)
+    {
+        psys_pkg_t pkg;
+        psys_err_t err = NULL;
+
+        pkg = psys_pkg_new(
+            "example.com", "helloworld", "0.1", "3.0", "noarch");
+
+        if (!pkg) {
+            fprintf(stderr, "%s\\n", strerror(ENOMEM));
+            return EXIT_FAILURE;
+        }
+
+        psys_pkg_add_summary(pkg, "C", "A simple Hello World program");
+        psys_pkg_add_description(pkg, "C",
+             "This is a simple program which prints "
+             "\\"Hello World\\" onto the screen. It is an "
+             "example of a  program installed using the "
+             "psys library.");
+
+        if (psys_announce(pkg, &err)) {
+            fprintf(stderr, "psys_announce(): %s\\n", psys_err_msg(err));
+            psys_err_free(err);
+            psys_pkg_free(pkg);
+            return EXIT_FAILURE;
+        }
+
+        install();
+
+        if (psys_register(pkg, &err)) {
+            fprintf(stderr, "psys_register(): %s\\n", psys_err_msg(err));
+            psys_err_free(err);
+            psys_pkg_free(pkg);
+            return EXIT_FAILURE;
+        }
+
+        psys_pkg_free(pkg);
+        return EXIT_SUCCESS;
+    }
 
 ## Implementation
 
