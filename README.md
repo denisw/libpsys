@@ -1,19 +1,24 @@
 # The Psys Library
 
 ***Note:***
-*I developed this library in 2010 as an attempt of to create a
- standard interface for app installers integrate with native distro
- package managers, with the goal to eventually have that interface
- integrated into the [LSB standard](http://www.linuxbase.org/). I have
- since given up on that effort, though, and didn't develop the library
- any further in the last years, with the consequence that its
- package-manager-specific backends don't build anymore due to library
- changes (I developed this under Ubuntu 10.04!).*
+*I developed this library in 2010. Its goal was to allow installers of
+ third-party Linux apps to integrate with the native package system in
+ a distro-independent manner. This idea was based on the so-called
+ [Berlin Packaging API](https://wiki.linuxfoundation.org/en/Berlin_Packaging_API)
+ proposal, which was formulated at a
+ [Linux Standard Base](http://www.linuxbase.org/) face-to-face meeting
+ in 2006. My plan with the Psys library was to provide a useful
+ proof-of-concept implementation which could later serve as basis for
+ an standardized LSB interface.*
 
-*However, as the idea and code might be of interest for some, I have
+*I have since given up on that effort, though, and
+ didn't develop the library any further in the last years, with the
+ consequence that its package-manager-specific backends don't build
+ anymore due to library changes (I developed this under Ubuntu
+ 10.04!). However, as the idea and code might be of interest for some, I have
  decided to migrate the code and documentation to GitHub, where it is
  probably more easily found these days than at its original place
- [on Gitorious](https://www.gitorious.org/libpsys/libpsys). The
+ [at Gitorious](https://www.gitorious.org/libpsys/libpsys). The
  accompanying
  [discussions on lsb-discuss](https://lists.linux-foundation.org/pipermail/packaging/2010-June/001235.html)
  might also be of interest.*
